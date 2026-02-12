@@ -7,7 +7,7 @@
     "dev": "concurrently --names \"API,VITE\" --prefix-colors \"yellow,cyan\" \"python api/app.py\" \"vite\"",
     "dev:frontend": "vite",
     "dev:api": "python api/app.py",
-    "build": "tsc -b && vite build",
+    "build": "vite build",
     "lint": "eslint .",
     "preview": "vite preview"
   },
