@@ -61,37 +61,45 @@ def init_database():
     """Initialize database connection with fallback."""
     global engine, db_initialized
     
-    try:
-        from db_config import get_sqlalchemy_uri, is_postgres, get_outreach_db_path
+    # Check for PostgreSQL URL directly from environment (most reliable)
+    postgres_url = (
+        os.environ.get("DATABASE_URL") or
+        os.environ.get("POSTGRES_URL") or
+        os.environ.get("POSTGRES_PRISMA_URL") or
+        os.environ.get("SUPABASE_DB_URL")
+    )
+    
+    if postgres_url:
+        # Convert postgres:// to postgresql:// for SQLAlchemy 1.4+
+        if postgres_url.startswith("postgres://"):
+            postgres_url = postgres_url.replace("postgres://", "postgresql://", 1)
         
-        if is_postgres():
-            db_uri = get_sqlalchemy_uri()
-            engine = create_engine(
-                db_uri,
-                echo=False,
-                pool_pre_ping=True,
-                pool_size=5,
-                max_overflow=10,
-                pool_recycle=3600
-            )
-            print("Using PostgreSQL database")
-        else:
-            db_path = get_outreach_db_path()
-            # Ensure directory exists
-            os.makedirs(os.path.dirname(db_path), exist_ok=True)
-            engine = create_engine(f"sqlite:///{db_path}", echo=False, pool_pre_ping=True)
-            print(f"Using SQLite database: {db_path}")
-    except (ImportError, Exception) as e:
-        print(f"db_config import failed: {e}")
-        # Fallback to SQLite in local instance folder
+        print(f"DATABASE_URL found, connecting to PostgreSQL...")
+        engine = create_engine(
+            postgres_url,
+            echo=False,
+            pool_pre_ping=True,
+            pool_size=5,
+            max_overflow=10,
+            pool_recycle=3600
+        )
+        print("Connected to PostgreSQL database")
+    else:
+        # SQLite fallback for local development
+        print("No DATABASE_URL found, falling back to SQLite")
         if os.environ.get('VERCEL') == '1':
             db_path = os.path.join("/tmp", "katana_outreach.db")
         else:
-            instance_dir = os.path.join(parent_dir, "instance")
-            os.makedirs(instance_dir, exist_ok=True)
-            db_path = os.path.join(instance_dir, "katana_outreach.db")
+            try:
+                from db_config import get_outreach_db_path
+                db_path = get_outreach_db_path()
+            except ImportError:
+                instance_dir = os.path.join(os.path.dirname(os.path.dirname(__file__)), "instance")
+                os.makedirs(instance_dir, exist_ok=True)
+                db_path = os.path.join(instance_dir, "katana_outreach.db")
+        
         engine = create_engine(f"sqlite:///{db_path}", echo=False, pool_pre_ping=True)
-        print(f"Fallback to SQLite: {db_path}")
+        print(f"Using SQLite database: {db_path}")
     
     db_initialized = True
     return engine
