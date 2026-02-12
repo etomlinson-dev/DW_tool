@@ -69,9 +69,9 @@ def create_microsoft_models(Base):
     """Create Microsoft-related database models."""
     
     class MicrosoftToken(Base):
-        __tablename__ = "microsoft_tokens"
+        __tablename__ = "dw_microsoft_tokens"
         id = Column(Integer, primary_key=True)
-        user_id = Column(Integer, ForeignKey("team_members.id"))
+        user_id = Column(Integer, ForeignKey("dw_team_members.id"))
         access_token = Column(Text)
         refresh_token = Column(Text)
         expires_at = Column(DateTime)
@@ -92,10 +92,10 @@ def create_microsoft_models(Base):
             }
     
     class TrackedEmail(Base):
-        __tablename__ = "tracked_emails"
+        __tablename__ = "dw_tracked_emails"
         id = Column(Integer, primary_key=True)
-        user_id = Column(Integer, ForeignKey("team_members.id"))
-        lead_id = Column(Integer, ForeignKey("leads.id"), nullable=True)
+        user_id = Column(Integer, ForeignKey("dw_team_members.id"))
+        lead_id = Column(Integer, ForeignKey("dw_leads.id"), nullable=True)
         microsoft_message_id = Column(String(255), unique=True)
         subject = Column(String(500))
         recipient_email = Column(String(255))
@@ -125,9 +125,9 @@ def create_microsoft_models(Base):
             }
     
     class EmailSyncStatus(Base):
-        __tablename__ = "email_sync_status"
+        __tablename__ = "dw_email_sync_status"
         id = Column(Integer, primary_key=True)
-        user_id = Column(Integer, ForeignKey("team_members.id"), unique=True)
+        user_id = Column(Integer, ForeignKey("dw_team_members.id"), unique=True)
         last_sync_at = Column(DateTime)
         emails_synced = Column(Integer, default=0)
         status = Column(String(50), default="pending")  # pending, syncing, completed, error

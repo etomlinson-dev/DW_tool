@@ -111,7 +111,7 @@ def get_session():
 # ===========================================
 
 class Lead(Base):
-    __tablename__ = "leads"
+    __tablename__ = "dw_leads"
     id = Column(Integer, primary_key=True)
     # Core fields
     business_name = Column(String, nullable=False)
@@ -135,7 +135,7 @@ class Lead(Base):
     service_category = Column(String)  # Marketing, Consulting, Web Development, Other
     
     # Campaign/Segmentation (Phase 1)
-    campaign_id = Column(Integer, ForeignKey("campaigns.id"), nullable=True)
+    campaign_id = Column(Integer, ForeignKey("dw_campaigns.id"), nullable=True)
     
     # Outreach tracking (Phase 1)
     first_outreach_date = Column(DateTime)
@@ -229,9 +229,9 @@ class Lead(Base):
 
 
 class Log(Base):
-    __tablename__ = "logs"
+    __tablename__ = "dw_logs"
     id = Column(Integer, primary_key=True)
-    lead_id = Column(Integer, ForeignKey("leads.id"))
+    lead_id = Column(Integer, ForeignKey("dw_leads.id"))
     activity_type = Column(String)
     outcome = Column(String)
     timestamp = Column(DateTime, default=datetime.utcnow)
@@ -267,7 +267,7 @@ class Log(Base):
 # ===========================================
 
 class Campaign(Base):
-    __tablename__ = "campaigns"
+    __tablename__ = "dw_campaigns"
     id = Column(Integer, primary_key=True)
     name = Column(String(255), nullable=False)
     description = Column(Text)
@@ -311,7 +311,7 @@ class Campaign(Base):
 # ===========================================
 
 class PipelineStage(Base):
-    __tablename__ = "pipeline_stages"
+    __tablename__ = "dw_pipeline_stages"
     id = Column(Integer, primary_key=True)
     name = Column(String(100), nullable=False)
     description = Column(Text)
@@ -340,11 +340,11 @@ class PipelineStage(Base):
 
 
 class StageHistory(Base):
-    __tablename__ = "stage_history"
+    __tablename__ = "dw_stage_history"
     id = Column(Integer, primary_key=True)
-    lead_id = Column(Integer, ForeignKey("leads.id"), nullable=False)
-    from_stage_id = Column(Integer, ForeignKey("pipeline_stages.id"), nullable=True)
-    to_stage_id = Column(Integer, ForeignKey("pipeline_stages.id"), nullable=False)
+    lead_id = Column(Integer, ForeignKey("dw_leads.id"), nullable=False)
+    from_stage_id = Column(Integer, ForeignKey("dw_pipeline_stages.id"), nullable=True)
+    to_stage_id = Column(Integer, ForeignKey("dw_pipeline_stages.id"), nullable=False)
     changed_by = Column(String(100))
     reason = Column(Text)
     duration_seconds = Column(Integer)  # Time spent in previous stage
@@ -375,7 +375,7 @@ class StageHistory(Base):
 # ===========================================
 
 class TeamMember(Base):
-    __tablename__ = "team_members"
+    __tablename__ = "dw_team_members"
     id = Column(Integer, primary_key=True)
     name = Column(String(100), nullable=False)
     email = Column(String(255), unique=True, nullable=False)
@@ -424,9 +424,9 @@ class TeamMember(Base):
 
 
 class Reminder(Base):
-    __tablename__ = "reminders"
+    __tablename__ = "dw_reminders"
     id = Column(Integer, primary_key=True)
-    lead_id = Column(Integer, ForeignKey("leads.id"))
+    lead_id = Column(Integer, ForeignKey("dw_leads.id"))
     assigned_to = Column(String(100))
     type = Column(String(50))  # follow-up, callback, send-email, meeting-prep, proposal, other
     priority = Column(String(20), default="medium")  # high, medium, low
@@ -460,9 +460,9 @@ class Reminder(Base):
 
 
 class CalendarEvent(Base):
-    __tablename__ = "calendar_events"
+    __tablename__ = "dw_calendar_events"
     id = Column(Integer, primary_key=True)
-    lead_id = Column(Integer, ForeignKey("leads.id"))
+    lead_id = Column(Integer, ForeignKey("dw_leads.id"))
     title = Column(String(255), nullable=False)
     description = Column(Text)
     event_type = Column(String(50))  # meeting, follow-up, email, call
@@ -491,7 +491,7 @@ class CalendarEvent(Base):
 
 
 class EmailTemplate(Base):
-    __tablename__ = "email_templates"
+    __tablename__ = "dw_email_templates"
     id = Column(Integer, primary_key=True)
     name = Column(String(255), nullable=False)
     category = Column(String(100))
@@ -517,7 +517,7 @@ class EmailTemplate(Base):
 
 
 class EmailSequence(Base):
-    __tablename__ = "email_sequences"
+    __tablename__ = "dw_email_sequences"
     id = Column(Integer, primary_key=True)
     name = Column(String(255), nullable=False)
     description = Column(Text)
@@ -548,11 +548,11 @@ class EmailSequence(Base):
 
 
 class EmailSequenceStep(Base):
-    __tablename__ = "email_sequence_steps"
+    __tablename__ = "dw_email_sequence_steps"
     id = Column(Integer, primary_key=True)
-    sequence_id = Column(Integer, ForeignKey("email_sequences.id"))
+    sequence_id = Column(Integer, ForeignKey("dw_email_sequences.id"))
     step_order = Column(Integer, nullable=False)
-    template_id = Column(Integer, ForeignKey("email_templates.id"))
+    template_id = Column(Integer, ForeignKey("dw_email_templates.id"))
     delay_days = Column(Integer, default=0)
     subject_override = Column(String(500))
     
@@ -571,10 +571,10 @@ class EmailSequenceStep(Base):
 
 
 class GeneratedEmail(Base):
-    __tablename__ = "generated_emails"
+    __tablename__ = "dw_generated_emails"
     id = Column(Integer, primary_key=True)
-    lead_id = Column(Integer, ForeignKey("leads.id"))
-    template_id = Column(Integer, ForeignKey("email_templates.id"))
+    lead_id = Column(Integer, ForeignKey("dw_leads.id"))
+    template_id = Column(Integer, ForeignKey("dw_email_templates.id"))
     recipient_email = Column(String(255))
     subject = Column(String(500))
     body = Column(Text)
@@ -622,9 +622,9 @@ class GeneratedEmail(Base):
 
 
 class Proposal(Base):
-    __tablename__ = "proposals"
+    __tablename__ = "dw_proposals"
     id = Column(Integer, primary_key=True)
-    lead_id = Column(Integer, ForeignKey("leads.id"))
+    lead_id = Column(Integer, ForeignKey("dw_leads.id"))
     title = Column(String(255))
     configuration_json = Column(Text)
     proposal_html = Column(Text)
@@ -663,7 +663,7 @@ class Proposal(Base):
 
 
 class CallScript(Base):
-    __tablename__ = "call_scripts"
+    __tablename__ = "dw_call_scripts"
     id = Column(Integer, primary_key=True)
     name = Column(String(100), nullable=False)
     script_type = Column(String(50))  # intro, voicemail, follow-up, objection
@@ -685,7 +685,7 @@ class CallScript(Base):
 
 
 class SearchHistory(Base):
-    __tablename__ = "search_history"
+    __tablename__ = "dw_search_history"
     id = Column(Integer, primary_key=True)
     user_id = Column(Integer)
     query = Column(String(255))
@@ -703,7 +703,7 @@ class SearchHistory(Base):
 
 
 class NetworkClient(Base):
-    __tablename__ = "network_clients"
+    __tablename__ = "dw_network_clients"
     id = Column(Integer, primary_key=True)
     name = Column(String(255), nullable=False)
     color = Column(String(20), default="#3b82f6")
@@ -718,7 +718,7 @@ class NetworkClient(Base):
 
 
 class NetworkEntity(Base):
-    __tablename__ = "network_entities"
+    __tablename__ = "dw_network_entities"
     id = Column(Integer, primary_key=True)
     label = Column(String(255), nullable=False)
     entity_type = Column(String(50))  # person, firm, fund
@@ -735,10 +735,10 @@ class NetworkEntity(Base):
 
 
 class NetworkEdge(Base):
-    __tablename__ = "network_edges"
+    __tablename__ = "dw_network_edges"
     id = Column(Integer, primary_key=True)
-    from_entity_id = Column(Integer, ForeignKey("network_entities.id"))
-    to_entity_id = Column(Integer, ForeignKey("network_entities.id"))
+    from_entity_id = Column(Integer, ForeignKey("dw_network_entities.id"))
+    to_entity_id = Column(Integer, ForeignKey("dw_network_entities.id"))
     strength = Column(Float, default=1.0)
     client_ids = Column(Text)  # JSON array of client IDs
     created_at = Column(DateTime, default=datetime.utcnow)
@@ -760,7 +760,7 @@ class NetworkEdge(Base):
 # ===========================================
 
 class AutomationRule(Base):
-    __tablename__ = "automation_rules"
+    __tablename__ = "dw_automation_rules"
     id = Column(Integer, primary_key=True)
     name = Column(String(255), nullable=False)
     description = Column(Text)
@@ -797,7 +797,7 @@ class AutomationRule(Base):
 
 
 class Notification(Base):
-    __tablename__ = "notifications"
+    __tablename__ = "dw_notifications"
     id = Column(Integer, primary_key=True)
     user_id = Column(Integer)  # Team member ID
     user_name = Column(String(100))
@@ -806,8 +806,8 @@ class Notification(Base):
     message = Column(Text)
     link = Column(String(500))  # Optional link to related resource
     is_read = Column(Boolean, default=False)
-    related_lead_id = Column(Integer, ForeignKey("leads.id"), nullable=True)
-    related_rule_id = Column(Integer, ForeignKey("automation_rules.id"), nullable=True)
+    related_lead_id = Column(Integer, ForeignKey("dw_leads.id"), nullable=True)
+    related_rule_id = Column(Integer, ForeignKey("dw_automation_rules.id"), nullable=True)
     created_at = Column(DateTime, default=datetime.utcnow)
     read_at = Column(DateTime)
     
@@ -835,9 +835,9 @@ class Notification(Base):
 
 
 class SLATimer(Base):
-    __tablename__ = "sla_timers"
+    __tablename__ = "dw_sla_timers"
     id = Column(Integer, primary_key=True)
-    lead_id = Column(Integer, ForeignKey("leads.id"), nullable=False)
+    lead_id = Column(Integer, ForeignKey("dw_leads.id"), nullable=False)
     timer_type = Column(String(50))  # response_time, follow_up, stage_duration, proposal_review
     start_time = Column(DateTime, default=datetime.utcnow)
     deadline = Column(DateTime, nullable=False)
@@ -875,9 +875,9 @@ class SLATimer(Base):
 # ===========================================
 
 class Document(Base):
-    __tablename__ = "documents"
+    __tablename__ = "dw_documents"
     id = Column(Integer, primary_key=True)
-    lead_id = Column(Integer, ForeignKey("leads.id"), nullable=True)
+    lead_id = Column(Integer, ForeignKey("dw_leads.id"), nullable=True)
     filename = Column(String(255), nullable=False)
     original_filename = Column(String(255))
     file_type = Column(String(50))  # pdf, doc, xlsx, etc.
@@ -912,7 +912,7 @@ class Document(Base):
 
 
 class AuditLog(Base):
-    __tablename__ = "audit_logs"
+    __tablename__ = "dw_audit_logs"
     id = Column(Integer, primary_key=True)
     entity_type = Column(String(50), nullable=False)  # lead, proposal, user, etc.
     entity_id = Column(Integer)
