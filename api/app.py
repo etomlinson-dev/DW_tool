@@ -952,8 +952,9 @@ except Exception as e:
     print(f"Warning: Could not create Microsoft models: {e}")
     MicrosoftToken, TrackedEmail, EmailSyncStatus = None, None, None
 
-# Create tables
-Base.metadata.create_all(engine)
+# Create tables (skip on Vercel since tables are managed via migrations)
+if not os.environ.get('VERCEL'):
+    Base.metadata.create_all(engine)
 
 # Register Microsoft routes
 if MicrosoftToken and TrackedEmail and EmailSyncStatus:
