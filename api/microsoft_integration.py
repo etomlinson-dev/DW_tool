@@ -200,6 +200,21 @@ def create_microsoft_routes(app, session_maker, MicrosoftToken, TrackedEmail, Em
     def get_session():
         return session_maker()
     
+    @microsoft_bp.route('/debug-config', methods=['GET'])
+    def debug_config():
+        """Debug endpoint to check what config the app is using."""
+        # Re-read fresh from env to compare
+        fresh_config = get_ms_config()
+        return jsonify({
+            "redirect_uri_in_use": MS_REDIRECT_URI,
+            "redirect_uri_from_env": fresh_config['redirect_uri'],
+            "frontend_url_in_use": MS_FRONTEND_URL,
+            "env_MS_REDIRECT_URI": os.environ.get('MS_REDIRECT_URI', 'NOT SET'),
+            "env_VERCEL_URL": os.environ.get('VERCEL_URL', 'NOT SET'),
+            "env_MS_TENANT_ID": os.environ.get('MS_TENANT_ID', 'NOT SET')[:8] + '...' if os.environ.get('MS_TENANT_ID') else 'NOT SET',
+            "client_id_set": bool(MS_CLIENT_ID),
+        })
+    
     @microsoft_bp.route('/login', methods=['GET', 'POST'])
     def microsoft_login():
         """Initiate Microsoft OAuth flow for SSO."""
