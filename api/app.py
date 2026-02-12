@@ -70,9 +70,11 @@ def init_database():
     )
     
     if postgres_url:
-        # Convert postgres:// to postgresql:// for SQLAlchemy 1.4+
+        # Convert to postgresql+pg8000:// for SQLAlchemy with pg8000 driver
         if postgres_url.startswith("postgres://"):
-            postgres_url = postgres_url.replace("postgres://", "postgresql://", 1)
+            postgres_url = postgres_url.replace("postgres://", "postgresql+pg8000://", 1)
+        elif postgres_url.startswith("postgresql://"):
+            postgres_url = postgres_url.replace("postgresql://", "postgresql+pg8000://", 1)
         
         print(f"DATABASE_URL found, connecting to PostgreSQL...")
         engine = create_engine(
