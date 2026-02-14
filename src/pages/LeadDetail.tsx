@@ -30,6 +30,15 @@ export function LeadDetail() {
   // Edit mode
   const [isEditing, setIsEditing] = useState(false);
   const [editForm, setEditForm] = useState<Partial<Lead>>({});
+  const [reps, setReps] = useState<{ id: number; name: string }[]>([]);
+
+  // Load team members for assigned rep dropdown
+  useEffect(() => {
+    fetch("/api/team/sso")
+      .then((r) => r.json())
+      .then(setReps)
+      .catch(console.error);
+  }, []);
 
   // Load lead, logs, and emails
   useEffect(() => {
@@ -320,6 +329,19 @@ export function LeadDetail() {
                       <option value="">Select Category</option>
                       {SERVICE_CATEGORY_OPTIONS.map((cat) => (
                         <option key={cat} value={cat}>{cat}</option>
+                      ))}
+                    </select>
+                  </div>
+                  <div>
+                    <label style={{ display: "block", fontSize: "13px", color: "#6b7280", marginBottom: "6px" }}>Assigned Rep</label>
+                    <select
+                      value={editForm.assigned_rep || ""}
+                      onChange={(e) => setEditForm({ ...editForm, assigned_rep: e.target.value })}
+                      style={{ width: "100%", padding: "10px 12px", borderRadius: "8px", border: "1px solid #e5e7eb", fontSize: "14px" }}
+                    >
+                      <option value="">Unassigned</option>
+                      {reps.map((rep) => (
+                        <option key={rep.id} value={rep.name}>{rep.name}</option>
                       ))}
                     </select>
                   </div>
