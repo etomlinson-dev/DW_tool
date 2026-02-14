@@ -640,9 +640,13 @@ export function PendingEmails() {
                       <span style={styles.emailTime}>{formatDate(email.generatedAt)}</span>
                     </div>
                     
-                    <Link to={`/lead/${email.leadId}`} style={styles.leadName}>
-                      {email.leadName}
-                    </Link>
+                    {email.leadId ? (
+                      <Link to={`/lead/${email.leadId}`} style={styles.leadName}>
+                        {email.leadName}
+                      </Link>
+                    ) : (
+                      <span style={styles.leadName}>{email.leadName}</span>
+                    )}
                     <p style={styles.emailSubject}>{email.subject}</p>
                     <p style={styles.emailPreview}>
                       {email.body.replace(/<[^>]*>/g, "").substring(0, 100)}...
@@ -685,9 +689,13 @@ export function PendingEmails() {
                 <div style={styles.previewInfo}>
                   <div style={styles.infoRow}>
                     <span style={styles.infoLabel}>Lead:</span>
-                    <Link to={`/lead/${selectedEmail.leadId}`} style={styles.infoLink}>
-                      {selectedEmail.leadName}
-                    </Link>
+                    {selectedEmail.leadId ? (
+                      <Link to={`/lead/${selectedEmail.leadId}`} style={styles.infoLink}>
+                        {selectedEmail.leadName}
+                      </Link>
+                    ) : (
+                      <span>{selectedEmail.leadName}</span>
+                    )}
                   </div>
                   <div style={styles.infoRow}>
                     <span style={styles.infoLabel}>Generated:</span>
