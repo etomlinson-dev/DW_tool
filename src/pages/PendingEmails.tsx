@@ -181,9 +181,7 @@ export function PendingEmails() {
 
   // Stats - use server counts so they show on all tabs
   const stats = {
-    pending: tabCounts.pending_review || 0,
-    approved: tabCounts.approved || 0,
-    rejected: tabCounts.rejected || 0,
+    draft: tabCounts.draft || 0,
     sent: tabCounts.sent || 0,
     tracking: trackingStats.total_sent || tabCounts.sent || 0,
   };
@@ -305,8 +303,8 @@ export function PendingEmails() {
         transition={{ delay: 0.1 }}
       >
         <div>
-          <h1 style={styles.title}>Email Approval Queue</h1>
-          <p style={styles.subtitle}>Review and approve outgoing emails</p>
+          <h1 style={styles.title}>Emails</h1>
+          <p style={styles.subtitle}>Compose, draft, and send outgoing emails</p>
         </div>
         <div style={styles.headerActions}>
           <motion.span 
@@ -315,7 +313,7 @@ export function PendingEmails() {
             animate={{ scale: 1 }}
             transition={{ delay: 0.2 }}
           >
-            <span style={styles.statDot} /> {stats.pending} pending
+            <span style={styles.statDot} /> {stats.draft} draft{stats.draft !== 1 ? "s" : ""}
           </motion.span>
           <motion.button
             onClick={() => setShowComposer(true)}
@@ -349,9 +347,7 @@ export function PendingEmails() {
             <span>{tab.icon}</span>
             {tab.label}
             <span style={styles.tabCount}>
-              {tab.id === "pending_review" ? stats.pending :
-               tab.id === "approved" ? stats.approved :
-               tab.id === "rejected" ? stats.rejected :
+              {tab.id === "draft" ? stats.draft :
                tab.id === "tracking" ? stats.tracking : stats.sent}
             </span>
           </motion.button>
