@@ -24,67 +24,15 @@ interface ProposalConfig {
   terms: string;
 }
 
-// Available services catalog
-const SERVICE_CATALOG: Omit<ServiceItem, "quantity">[] = [
-  {
-    id: "growth-strategy",
-    name: "Growth Strategy Consulting",
-    description: "Comprehensive growth strategy development and implementation roadmap",
-    price: 15000,
-    category: "Consulting",
-  },
-  {
-    id: "capital-advisory",
-    name: "Capital Advisory Services",
-    description: "Strategic capital raising and investor relations support",
-    price: 25000,
-    category: "Advisory",
-  },
-  {
-    id: "market-analysis",
-    name: "Market Analysis Report",
-    description: "In-depth market research and competitive landscape analysis",
-    price: 8000,
-    category: "Research",
-  },
-  {
-    id: "investor-intro",
-    name: "Investor Introduction Package",
-    description: "Curated introductions to qualified investors in your sector",
-    price: 12000,
-    category: "Advisory",
-  },
-  {
-    id: "pitch-deck",
-    name: "Pitch Deck Development",
-    description: "Professional pitch deck design and narrative development",
-    price: 5000,
-    category: "Creative",
-  },
-  {
-    id: "financial-model",
-    name: "Financial Model Creation",
-    description: "Comprehensive financial projections and scenario modeling",
-    price: 7500,
-    category: "Consulting",
-  },
-  {
-    id: "due-diligence",
-    name: "Due Diligence Support",
-    description: "End-to-end due diligence preparation and management",
-    price: 18000,
-    category: "Advisory",
-  },
-  {
-    id: "board-advisory",
-    name: "Board Advisory Retainer",
-    description: "Monthly board advisory and strategic guidance (per month)",
-    price: 3500,
-    category: "Consulting",
-  },
-];
-
-const CATEGORIES = ["All", "Consulting", "Advisory", "Research", "Creative"];
+// Service catalog loaded from API
+interface CatalogService {
+  id: number;
+  name: string;
+  description: string;
+  price: number;
+  category: string;
+  is_active: boolean;
+}
 
 const CATEGORY_COLORS: Record<string, { bg: string; text: string }> = {
   Consulting: { bg: "#dbeafe", text: "#1d4ed8" },
@@ -103,6 +51,12 @@ export function Orbit() {
   const [searchQuery, setSearchQuery] = useState("");
   const [showPreview, setShowPreview] = useState(false);
   const [addedServiceId, setAddedServiceId] = useState<string | null>(null);
+
+  // Service catalog from API
+  const [serviceCatalog, setServiceCatalog] = useState<CatalogService[]>([]);
+  const [showManageServices, setShowManageServices] = useState(false);
+  const [editingService, setEditingService] = useState<Partial<CatalogService> | null>(null);
+  const [serviceFormSaving, setServiceFormSaving] = useState(false);
   
   const [proposal, setProposal] = useState<ProposalConfig>({
     clientName: "",
@@ -118,6 +72,18 @@ export function Orbit() {
     { id: number; clientName: string; total: number; date: string; status: string }[]
   >([]);
 
+  const loadServices = async () => {
+    try {
+      const res = await fetch("/api/services");
+      if (res.ok) {
+        const data = await res.json();
+        setServiceCatalog(data);
+      }
+    } catch (err) {
+      console.error("Failed to load services:", err);
+    }
+  };
+
   useEffect(() => {
     const loadData = async () => {
       setLoading(true);
@@ -125,6 +91,9 @@ export function Orbit() {
         // Load leads - all leads so proposals can target any
         const leadsResponse = await leadsApi.getLeads({ per_page: 200 });
         setLeads(leadsResponse.data);
+        
+        // Load services from API
+        await loadServices();
         
         // Load proposals from API
         const proposalsResponse = await fetch("/api/proposals");
@@ -147,7 +116,10 @@ export function Orbit() {
     loadData();
   }, []);
 
-  const filteredServices = SERVICE_CATALOG.filter((service) => {
+  // Derive categories dynamically from loaded services
+  const categories = ["All", ...Array.from(new Set(serviceCatalog.map(s => s.category).filter(Boolean)))];
+
+  const filteredServices = serviceCatalog.filter((service) => {
     const matchesCategory = activeCategory === "All" || service.category === activeCategory;
     const matchesSearch =
       service.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
@@ -155,22 +127,23 @@ export function Orbit() {
     return matchesCategory && matchesSearch;
   });
 
-  const addService = (service: Omit<ServiceItem, "quantity">) => {
-    setAddedServiceId(service.id);
+  const addService = (service: CatalogService) => {
+    const sid = String(service.id);
+    setAddedServiceId(sid);
     setTimeout(() => setAddedServiceId(null), 600);
     
-    const existing = proposal.services.find((s) => s.id === service.id);
+    const existing = proposal.services.find((s) => s.id === sid);
     if (existing) {
       setProposal({
         ...proposal,
         services: proposal.services.map((s) =>
-          s.id === service.id ? { ...s, quantity: s.quantity + 1 } : s
+          s.id === sid ? { ...s, quantity: s.quantity + 1 } : s
         ),
       });
     } else {
       setProposal({
         ...proposal,
-        services: [...proposal.services, { ...service, quantity: 1 }],
+        services: [...proposal.services, { id: sid, name: service.name, description: service.description, price: service.price, category: service.category, quantity: 1 }],
       });
     }
   };
@@ -383,10 +356,30 @@ export function Orbit() {
           transition={{ delay: 0.2 }}
         >
           <div style={styles.card}>
-            <h3 style={styles.cardTitle}>
-              <span style={styles.cardIcon}>📦</span>
-              Service Catalog
-            </h3>
+            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+              <h3 style={styles.cardTitle}>
+                <span style={styles.cardIcon}>📦</span>
+                Service Catalog
+              </h3>
+              <button
+                onClick={() => { setEditingService(null); setShowManageServices(true); }}
+                style={{
+                  padding: "6px 14px",
+                  borderRadius: "8px",
+                  border: "1px solid #e5e7eb",
+                  background: "#fff",
+                  fontSize: "12px",
+                  fontWeight: 600,
+                  cursor: "pointer",
+                  color: "#374151",
+                  display: "flex",
+                  alignItems: "center",
+                  gap: "4px",
+                }}
+              >
+                Manage Services
+              </button>
+            </div>
             
             {/* Search and Filter Bar */}
             <div style={styles.catalogToolbar}>
@@ -413,7 +406,7 @@ export function Orbit() {
                 onChange={(e) => setActiveCategory(e.target.value)}
                 style={styles.categorySelect}
               >
-                {CATEGORIES.map((cat) => (
+                {categories.map((cat) => (
                   <option key={cat} value={cat}>{cat}</option>
                 ))}
               </select>
@@ -433,7 +426,7 @@ export function Orbit() {
                 <tbody>
                   <AnimatePresence mode="popLayout">
                     {filteredServices.map((service, index) => {
-                      const inProposal = proposal.services.some(s => s.id === service.id);
+                      const inProposal = proposal.services.some(s => s.id === String(service.id));
                       const catColors = CATEGORY_COLORS[service.category] || { bg: "#f3f4f6", text: "#374151" };
                       
                       return (
@@ -870,6 +863,271 @@ export function Orbit() {
           </AnimatePresence>
         </motion.div>
       </div>
+
+      {/* Manage Services Modal */}
+      {showManageServices && (
+        <div
+          style={{
+            position: "fixed",
+            inset: 0,
+            background: "rgba(0, 0, 0, 0.5)",
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "center",
+            zIndex: 1000,
+            padding: "24px",
+          }}
+          onClick={(e) => {
+            if (e.target === e.currentTarget) setShowManageServices(false);
+          }}
+        >
+          <div style={{
+            background: "#fff",
+            borderRadius: "20px",
+            width: "100%",
+            maxWidth: "720px",
+            maxHeight: "85vh",
+            overflow: "hidden",
+            boxShadow: "0 20px 60px rgba(0,0,0,0.2)",
+            display: "flex",
+            flexDirection: "column",
+          }}>
+            {/* Modal Header */}
+            <div style={{
+              padding: "24px 28px",
+              borderBottom: "1px solid #f0f0f0",
+              display: "flex",
+              justifyContent: "space-between",
+              alignItems: "center",
+            }}>
+              <h2 style={{ margin: 0, fontSize: "18px", fontWeight: 700, color: "#1f2937" }}>
+                {editingService ? (editingService.id ? "Edit Service" : "Add Service") : "Manage Services"}
+              </h2>
+              <div style={{ display: "flex", gap: "8px" }}>
+                {!editingService && (
+                  <button
+                    onClick={() => setEditingService({ name: "", description: "", price: 0, category: "" })}
+                    style={{
+                      padding: "8px 16px",
+                      borderRadius: "10px",
+                      border: "none",
+                      background: "linear-gradient(135deg, #667eea 0%, #764ba2 100%)",
+                      color: "#fff",
+                      fontSize: "13px",
+                      fontWeight: 600,
+                      cursor: "pointer",
+                    }}
+                  >
+                    + Add Service
+                  </button>
+                )}
+                <button
+                  onClick={() => { setShowManageServices(false); setEditingService(null); }}
+                  style={{ background: "none", border: "none", fontSize: "20px", cursor: "pointer", color: "#9ca3af", padding: "4px 8px" }}
+                >
+                  ✕
+                </button>
+              </div>
+            </div>
+
+            {/* Modal Body */}
+            <div style={{ padding: "24px 28px", overflowY: "auto", flex: 1 }}>
+              {editingService ? (
+                /* Edit / Add Form */
+                <div style={{ display: "flex", flexDirection: "column", gap: "18px" }}>
+                  <div>
+                    <label style={{ display: "block", fontSize: "12px", fontWeight: 600, color: "#6b7280", marginBottom: "6px", textTransform: "uppercase", letterSpacing: "0.04em" }}>Service Name *</label>
+                    <input
+                      type="text"
+                      value={editingService.name || ""}
+                      onChange={(e) => setEditingService({ ...editingService, name: e.target.value })}
+                      placeholder="e.g. Growth Strategy Consulting"
+                      style={{ width: "100%", padding: "10px 14px", borderRadius: "10px", border: "1px solid #e5e7eb", fontSize: "14px", boxSizing: "border-box" }}
+                    />
+                  </div>
+                  <div>
+                    <label style={{ display: "block", fontSize: "12px", fontWeight: 600, color: "#6b7280", marginBottom: "6px", textTransform: "uppercase", letterSpacing: "0.04em" }}>Description</label>
+                    <textarea
+                      value={editingService.description || ""}
+                      onChange={(e) => setEditingService({ ...editingService, description: e.target.value })}
+                      placeholder="Brief description of this service..."
+                      rows={3}
+                      style={{ width: "100%", padding: "10px 14px", borderRadius: "10px", border: "1px solid #e5e7eb", fontSize: "14px", resize: "vertical", boxSizing: "border-box", fontFamily: "inherit" }}
+                    />
+                  </div>
+                  <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "16px" }}>
+                    <div>
+                      <label style={{ display: "block", fontSize: "12px", fontWeight: 600, color: "#6b7280", marginBottom: "6px", textTransform: "uppercase", letterSpacing: "0.04em" }}>Price ($)</label>
+                      <input
+                        type="number"
+                        value={editingService.price || 0}
+                        onChange={(e) => setEditingService({ ...editingService, price: parseFloat(e.target.value) || 0 })}
+                        min={0}
+                        step={100}
+                        style={{ width: "100%", padding: "10px 14px", borderRadius: "10px", border: "1px solid #e5e7eb", fontSize: "14px", boxSizing: "border-box" }}
+                      />
+                    </div>
+                    <div>
+                      <label style={{ display: "block", fontSize: "12px", fontWeight: 600, color: "#6b7280", marginBottom: "6px", textTransform: "uppercase", letterSpacing: "0.04em" }}>Category</label>
+                      <input
+                        type="text"
+                        value={editingService.category || ""}
+                        onChange={(e) => setEditingService({ ...editingService, category: e.target.value })}
+                        placeholder="e.g. Consulting, Advisory, Creative"
+                        list="service-categories"
+                        style={{ width: "100%", padding: "10px 14px", borderRadius: "10px", border: "1px solid #e5e7eb", fontSize: "14px", boxSizing: "border-box" }}
+                      />
+                      <datalist id="service-categories">
+                        {Array.from(new Set(serviceCatalog.map(s => s.category).filter(Boolean))).map(cat => (
+                          <option key={cat} value={cat} />
+                        ))}
+                      </datalist>
+                    </div>
+                  </div>
+
+                  <div style={{ display: "flex", gap: "10px", justifyContent: "flex-end", marginTop: "8px" }}>
+                    <button
+                      onClick={() => setEditingService(null)}
+                      style={{ padding: "9px 20px", borderRadius: "10px", border: "1px solid #e5e7eb", background: "#fff", fontSize: "13px", fontWeight: 500, cursor: "pointer", color: "#374151" }}
+                    >
+                      Cancel
+                    </button>
+                    <button
+                      disabled={!editingService.name?.trim() || serviceFormSaving}
+                      onClick={async () => {
+                        setServiceFormSaving(true);
+                        try {
+                          const isNew = !editingService.id;
+                          const res = await fetch(
+                            isNew ? "/api/services" : `/api/services/${editingService.id}`,
+                            {
+                              method: isNew ? "POST" : "PUT",
+                              headers: { "Content-Type": "application/json" },
+                              body: JSON.stringify({
+                                name: editingService.name,
+                                description: editingService.description,
+                                price: editingService.price,
+                                category: editingService.category,
+                              }),
+                            }
+                          );
+                          if (res.ok) {
+                            await loadServices();
+                            setEditingService(null);
+                          }
+                        } catch (err) {
+                          console.error("Failed to save service:", err);
+                        } finally {
+                          setServiceFormSaving(false);
+                        }
+                      }}
+                      style={{
+                        padding: "9px 20px",
+                        borderRadius: "10px",
+                        border: "none",
+                        background: (!editingService.name?.trim() || serviceFormSaving) ? "#d1d5db" : "#10b981",
+                        color: "#fff",
+                        fontSize: "13px",
+                        fontWeight: 600,
+                        cursor: (!editingService.name?.trim() || serviceFormSaving) ? "not-allowed" : "pointer",
+                      }}
+                    >
+                      {serviceFormSaving ? "Saving..." : editingService.id ? "Save Changes" : "Add Service"}
+                    </button>
+                  </div>
+                </div>
+              ) : (
+                /* Service List */
+                <div style={{ display: "flex", flexDirection: "column", gap: "8px" }}>
+                  {serviceCatalog.length === 0 ? (
+                    <div style={{ textAlign: "center", padding: "40px", color: "#9ca3af" }}>
+                      <p style={{ fontSize: "14px" }}>No services yet. Click "Add Service" to create one.</p>
+                    </div>
+                  ) : (
+                    serviceCatalog.map((service) => {
+                      const catColors = CATEGORY_COLORS[service.category] || { bg: "#f3f4f6", text: "#374151" };
+                      return (
+                        <div
+                          key={service.id}
+                          style={{
+                            padding: "14px 18px",
+                            borderRadius: "14px",
+                            border: "1px solid #f3f4f6",
+                            display: "flex",
+                            justifyContent: "space-between",
+                            alignItems: "center",
+                            transition: "background 0.15s ease",
+                          }}
+                          onMouseEnter={(e) => e.currentTarget.style.background = "#f9fafb"}
+                          onMouseLeave={(e) => e.currentTarget.style.background = "transparent"}
+                        >
+                          <div style={{ flex: 1, minWidth: 0 }}>
+                            <div style={{ display: "flex", alignItems: "center", gap: "10px", marginBottom: "4px" }}>
+                              <span style={{ fontSize: "14px", fontWeight: 600, color: "#1f2937" }}>{service.name}</span>
+                              <span style={{
+                                padding: "2px 8px",
+                                borderRadius: "6px",
+                                fontSize: "11px",
+                                fontWeight: 600,
+                                background: catColors.bg,
+                                color: catColors.text,
+                              }}>{service.category}</span>
+                            </div>
+                            <div style={{ fontSize: "13px", color: "#6b7280" }}>{service.description}</div>
+                          </div>
+                          <div style={{ display: "flex", alignItems: "center", gap: "12px", marginLeft: "16px", flexShrink: 0 }}>
+                            <span style={{ fontSize: "15px", fontWeight: 700, color: "#1f2937" }}>
+                              ${service.price.toLocaleString()}
+                            </span>
+                            <button
+                              onClick={() => setEditingService(service)}
+                              style={{
+                                padding: "5px 12px",
+                                borderRadius: "8px",
+                                border: "1px solid #e5e7eb",
+                                background: "#fff",
+                                fontSize: "12px",
+                                cursor: "pointer",
+                                color: "#667eea",
+                                fontWeight: 600,
+                              }}
+                            >
+                              Edit
+                            </button>
+                            <button
+                              onClick={async () => {
+                                if (!confirm(`Remove "${service.name}" from the catalog?`)) return;
+                                try {
+                                  await fetch(`/api/services/${service.id}`, { method: "DELETE" });
+                                  await loadServices();
+                                } catch (err) {
+                                  console.error("Failed to delete service:", err);
+                                }
+                              }}
+                              style={{
+                                padding: "5px 12px",
+                                borderRadius: "8px",
+                                border: "1px solid #fecaca",
+                                background: "#fff",
+                                fontSize: "12px",
+                                cursor: "pointer",
+                                color: "#ef4444",
+                                fontWeight: 600,
+                              }}
+                            >
+                              Remove
+                            </button>
+                          </div>
+                        </div>
+                      );
+                    })
+                  )}
+                </div>
+              )}
+            </div>
+          </div>
+        </div>
+      )}
     </motion.div>
   );
 }

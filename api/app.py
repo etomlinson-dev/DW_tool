@@ -940,6 +940,30 @@ class Document(Base):
         }
 
 
+class Service(Base):
+    __tablename__ = "dw_services"
+    id = Column(Integer, primary_key=True)
+    name = Column(String(200), nullable=False)
+    description = Column(Text)
+    price = Column(Float, default=0)
+    category = Column(String(100))
+    is_active = Column(Boolean, default=True)
+    created_at = Column(DateTime, default=datetime.utcnow)
+    updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
+
+    def to_dict(self):
+        return {
+            "id": self.id,
+            "name": self.name,
+            "description": self.description or "",
+            "price": self.price or 0,
+            "category": self.category or "",
+            "is_active": self.is_active,
+            "created_at": self.created_at.isoformat() if self.created_at else None,
+            "updated_at": self.updated_at.isoformat() if self.updated_at else None,
+        }
+
+
 class AuditLog(Base):
     __tablename__ = "dw_audit_logs"
     id = Column(Integer, primary_key=True)
@@ -5469,6 +5493,110 @@ def create_network_edge():
         session.add(edge)
         session.commit()
         return jsonify(edge.to_dict()), 201
+    finally:
+        session.close()
+
+
+# ===========================================
+# Services CRUD
+# ===========================================
+
+@app.route("/api/services", methods=["GET"])
+def get_services():
+    """Get all active services."""
+    session = get_session()
+    try:
+        show_all = request.args.get("all", "false").lower() == "true"
+        query = session.query(Service)
+        if not show_all:
+            query = query.filter_by(is_active=True)
+        services = query.order_by(Service.category, Service.name).all()
+        return jsonify([s.to_dict() for s in services])
+    finally:
+        session.close()
+
+
+@app.route("/api/services", methods=["POST"])
+def create_service():
+    """Create a new service."""
+    session = get_session()
+    try:
+        data = request.json
+        if not data or not data.get("name"):
+            return jsonify({"error": "Service name is required"}), 400
+        service = Service(
+            name=data["name"],
+            description=data.get("description", ""),
+            price=float(data.get("price", 0)),
+            category=data.get("category", ""),
+            is_active=True,
+        )
+        session.add(service)
+        session.commit()
+        return jsonify(service.to_dict()), 201
+    finally:
+        session.close()
+
+
+@app.route("/api/services/<int:service_id>", methods=["PUT"])
+def update_service(service_id):
+    """Update a service."""
+    session = get_session()
+    try:
+        service = session.query(Service).filter_by(id=service_id).first()
+        if not service:
+            return jsonify({"error": "Service not found"}), 404
+        data = request.json
+        for key in ["name", "description", "category"]:
+            if key in data:
+                setattr(service, key, data[key])
+        if "price" in data:
+            service.price = float(data["price"])
+        if "is_active" in data:
+            service.is_active = bool(data["is_active"])
+        session.commit()
+        return jsonify(service.to_dict())
+    finally:
+        session.close()
+
+
+@app.route("/api/services/<int:service_id>", methods=["DELETE"])
+def delete_service(service_id):
+    """Delete (deactivate) a service."""
+    session = get_session()
+    try:
+        service = session.query(Service).filter_by(id=service_id).first()
+        if not service:
+            return jsonify({"error": "Service not found"}), 404
+        service.is_active = False
+        session.commit()
+        return jsonify({"message": "Service deactivated", "id": service_id})
+    finally:
+        session.close()
+
+
+@app.route("/api/services/seed", methods=["POST"])
+def seed_services():
+    """Seed default services if none exist."""
+    session = get_session()
+    try:
+        existing = session.query(Service).count()
+        if existing > 0:
+            return jsonify({"message": f"Services already exist ({existing})", "seeded": False})
+        defaults = [
+            {"name": "Growth Strategy Consulting", "description": "Comprehensive growth strategy development and implementation roadmap", "price": 15000, "category": "Consulting"},
+            {"name": "Capital Advisory Services", "description": "Strategic capital raising and investor relations support", "price": 25000, "category": "Advisory"},
+            {"name": "Market Analysis Report", "description": "In-depth market research and competitive landscape analysis", "price": 8000, "category": "Research"},
+            {"name": "Investor Introduction Package", "description": "Curated introductions to qualified investors in your sector", "price": 12000, "category": "Advisory"},
+            {"name": "Pitch Deck Development", "description": "Professional pitch deck design and narrative development", "price": 5000, "category": "Creative"},
+            {"name": "Financial Model Creation", "description": "Comprehensive financial projections and scenario modeling", "price": 7500, "category": "Consulting"},
+            {"name": "Due Diligence Support", "description": "End-to-end due diligence preparation and management", "price": 18000, "category": "Advisory"},
+            {"name": "Board Advisory Retainer", "description": "Monthly board advisory and strategic guidance (per month)", "price": 3500, "category": "Consulting"},
+        ]
+        for d in defaults:
+            session.add(Service(**d))
+        session.commit()
+        return jsonify({"message": f"Seeded {len(defaults)} services", "seeded": True}), 201
     finally:
         session.close()
 
