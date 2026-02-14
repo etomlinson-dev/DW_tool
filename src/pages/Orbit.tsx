@@ -1239,6 +1239,7 @@ const styles: Record<string, React.CSSProperties> = {
     borderRadius: "16px",
     padding: "24px",
     boxShadow: "0 4px 20px rgba(0, 0, 0, 0.08)",
+    border: "1px solid #e5e7eb",
     overflow: "hidden",
     minWidth: 0,
     width: "100%",
