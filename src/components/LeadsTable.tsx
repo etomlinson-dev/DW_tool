@@ -84,7 +84,9 @@ export function LeadsTable({
                   />
                 </td>
                 <td className="business-name">
-                  <strong>{lead.business_name || "N/A"}</strong>
+                  <Link to={`/lead/${lead.id}`} style={{ color: "#2563eb", textDecoration: "none", fontWeight: 600 }}>
+                    {lead.business_name || "N/A"}
+                  </Link>
                 </td>
                 <td>{lead.industry || "-"}</td>
                 <td>{lead.assigned_rep || "Unassigned"}</td>
