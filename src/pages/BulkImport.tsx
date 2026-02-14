@@ -129,6 +129,8 @@ export function BulkImport() {
           appField = "website";
         } else if (headerLower.includes("industry") || headerLower.includes("sector")) {
           appField = "industry";
+        } else if (headerLower.includes("location") || headerLower.includes("city") || headerLower.includes("address") || headerLower.includes("state")) {
+          appField = "location";
         } else if (headerLower.includes("source")) {
           appField = "source";
         } else if (headerLower.includes("service") || headerLower.includes("category")) {
@@ -302,9 +304,9 @@ export function BulkImport() {
   };
 
   const downloadTemplate = () => {
-    const template = `business_name,contact_name,contact_title,email,phone,website,industry,source,service_category,assigned_rep,status,tags,deal_value,notes
-"Acme Corporation","John Smith","CEO","john@acme.com","555-123-4567","https://acme.com","Technology","LinkedIn","Consulting","Thomas Lin","Not Contacted","enterprise,priority","50000","Initial outreach pending"
-"Global Industries","Jane Doe","VP Sales","jane@global.com","555-987-6543","https://global.com","Manufacturing","Referral","Marketing","Sarah Johnson","Attempted","warm","25000","Left voicemail"`;
+    const template = `business_name,contact_name,contact_title,email,phone,website,industry,location,source,service_category,assigned_rep,status,tags,deal_value,notes
+"Acme Corporation","John Smith","CEO","john@acme.com","555-123-4567","https://acme.com","Technology","New York, NY","LinkedIn","Consulting","Thomas Lin","Not Contacted","enterprise,priority","50000","Initial outreach pending"
+"Global Industries","Jane Doe","VP Sales","jane@global.com","555-987-6543","https://global.com","Manufacturing","Los Angeles, CA","Referral","Marketing","Sarah Johnson","Attempted","warm","25000","Left voicemail"`;
 
     const blob = new Blob([template], { type: "text/csv" });
     const url = URL.createObjectURL(blob);
