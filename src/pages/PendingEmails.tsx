@@ -164,19 +164,27 @@ export function PendingEmails() {
     }
   }, [activeTab, fetchTracking]);
 
+  // Clear search and selection when switching tabs
+  useEffect(() => {
+    setSearchQuery("");
+    setSelectedEmail(null);
+  }, [activeTab]);
+
   useEffect(() => {
     fetchEmails();
     fetchCounts();
   }, [fetchEmails, fetchCounts]);
 
-  // Filter emails by status
+  // Filter emails by search only (API already filters by status)
   const filteredEmails = emails.filter((email) => {
-    const matchesStatus = email.status === activeTab;
-    const matchesSearch =
-      email.leadName.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      email.subject.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      email.assignedTo.toLowerCase().includes(searchQuery.toLowerCase());
-    return matchesStatus && matchesSearch;
+    if (!searchQuery) return true;
+    const q = searchQuery.toLowerCase();
+    return (
+      email.leadName.toLowerCase().includes(q) ||
+      email.leadEmail.toLowerCase().includes(q) ||
+      email.subject.toLowerCase().includes(q) ||
+      email.assignedTo.toLowerCase().includes(q)
+    );
   });
 
   // Stats - use server counts so they show on all tabs
