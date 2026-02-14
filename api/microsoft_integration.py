@@ -377,11 +377,18 @@ def create_microsoft_routes(app, session_maker, MicrosoftToken, TrackedEmail, Em
         """Check Microsoft connection status and return user info if authenticated."""
         db_session = get_session()
         try:
-            # Check Flask session first
+            # Check Flask session first, then X-User-Id header
             user_id = session.get('user_id')
+            if not user_id:
+                header_id = request.headers.get('X-User-Id')
+                if header_id:
+                    try:
+                        user_id = int(header_id)
+                    except (ValueError, TypeError):
+                        pass
             
             if user_id:
-                # User is authenticated via session
+                # User is authenticated via session or header
                 team_member = db_session.query(_TeamMember).filter_by(id=user_id).first()
                 token_record = db_session.query(MicrosoftToken).filter_by(user_id=user_id).first()
                 
@@ -399,8 +406,8 @@ def create_microsoft_routes(app, session_maker, MicrosoftToken, TrackedEmail, Em
                         "expires_at": token_record.expires_at.isoformat() if token_record.expires_at else None,
                     })
             
-            # Fallback: check for any valid token (legacy support)
-            token_record = db_session.query(MicrosoftToken).first()
+            # No valid session/header user found
+            token_record = db_session.query(MicrosoftToken).filter_by(user_id=user_id).first() if user_id else None
             
             if not token_record:
                 return jsonify({"connected": False, "authenticated": False})

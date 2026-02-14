@@ -1,6 +1,7 @@
 import { useState, useEffect } from "react";
 import { templatesApi, emailsApi, leadsApi } from "../api/client";
 import type { EmailTemplate, Lead } from "../types";
+import { useAuth } from "../contexts/AuthContext";
 
 interface EmailComposerProps {
   lead?: Lead | null;
@@ -9,6 +10,7 @@ interface EmailComposerProps {
 }
 
 export function EmailComposer({ lead: initialLead, onClose, onSent }: EmailComposerProps) {
+  const { user } = useAuth();
   const [templates, setTemplates] = useState<EmailTemplate[]>([]);
   const [selectedTemplateId, setSelectedTemplateId] = useState<number | null>(null);
   const [to, setTo] = useState(initialLead?.email || "");
@@ -129,16 +131,20 @@ export function EmailComposer({ lead: initialLead, onClose, onSent }: EmailCompo
     setError(null);
 
     try {
+      const headers: Record<string, string> = { "Content-Type": "application/json" };
+      if (user?.id) {
+        headers["X-User-Id"] = String(user.id);
+      }
       const response = await fetch("/api/emails/queue", {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
+        headers,
         body: JSON.stringify({
           to,
           subject,
           body,
           lead_id: lead?.id,
           template_id: selectedTemplateId,
-          generated_by: "Manual",
+          generated_by: user?.name || "Manual",
         }),
       });
 

@@ -3,6 +3,7 @@ import { Link } from "react-router-dom";
 import { motion, AnimatePresence } from "framer-motion";
 import { emailsApi, type PendingEmail as APIPendingEmail } from "../api/client";
 import { EmailComposer } from "../components";
+import { useAuth } from "../contexts/AuthContext";
 
 // Types for UI
 interface PendingEmail {
@@ -83,6 +84,7 @@ const STATUS_TABS = [
 ];
 
 export function PendingEmails() {
+  const { user } = useAuth();
   const [emails, setEmails] = useState<PendingEmail[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -190,13 +192,13 @@ export function PendingEmails() {
 
   const handleApprove = async (id: number) => {
     try {
-      await emailsApi.approveEmail(id, "Thomas Lin", "Approved for sending.");
+      await emailsApi.approveEmail(id, user?.name || "Unknown", "Approved for sending.");
       setEmails(emails.map((e) =>
         e.id === id
           ? {
               ...e,
               status: "approved" as const,
-              reviewedBy: "Thomas Lin",
+              reviewedBy: user?.name || "Unknown",
               reviewedAt: new Date().toISOString(),
               reviewNotes: "Approved for sending.",
             }
@@ -212,13 +214,13 @@ export function PendingEmails() {
 
   const handleReject = async (id: number, notes: string) => {
     try {
-      await emailsApi.rejectEmail(id, "Thomas Lin", notes || "Rejected - needs revision.");
+      await emailsApi.rejectEmail(id, user?.name || "Unknown", notes || "Rejected - needs revision.");
       setEmails(emails.map((e) =>
         e.id === id
           ? {
               ...e,
               status: "rejected" as const,
-              reviewedBy: "Thomas Lin",
+              reviewedBy: user?.name || "Unknown",
               reviewedAt: new Date().toISOString(),
               reviewNotes: notes || "Rejected - needs revision.",
             }

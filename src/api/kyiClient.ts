@@ -26,6 +26,23 @@ const api = axios.create({
   },
 });
 
+// Attach current user ID to every request so the backend
+// knows which user's Microsoft token to use.
+api.interceptors.request.use((config) => {
+  const saved = localStorage.getItem("dw_user");
+  if (saved) {
+    try {
+      const user = JSON.parse(saved);
+      if (user?.id) {
+        config.headers["X-User-Id"] = user.id;
+      }
+    } catch {
+      // Ignore parse errors
+    }
+  }
+  return config;
+});
+
 // ============================================================================
 // PROSPECTS API (Pipeline)
 // ============================================================================

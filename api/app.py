@@ -116,6 +116,25 @@ def get_session():
     return Session()
 
 
+def get_current_user_id():
+    """Get current user ID from request header or Flask session.
+    
+    Note: We use request.headers because the Flask 'session' import is
+    shadowed by SQLAlchemy db session variables throughout app.py.
+    The frontend sends X-User-Id with every request via an axios interceptor.
+    """
+    # Check header first (sent by frontend)
+    user_id = request.headers.get('X-User-Id')
+    if user_id:
+        try:
+            return int(user_id)
+        except (ValueError, TypeError):
+            pass
+    # Fallback to Flask session (re-import to avoid local variable shadowing)
+    from flask import session as flask_session
+    return flask_session.get('user_id')
+
+
 # ===========================================
 # Models (same as original outreach_app.py)
 # ===========================================
@@ -1903,8 +1922,11 @@ def get_my_performance():
         
         # Identify current user
         member = None
-        if MicrosoftToken:
-            token = session.query(MicrosoftToken).first()
+        current_user_id = get_current_user_id()
+        if current_user_id:
+            member = session.query(TeamMember).get(current_user_id)
+        if not member and MicrosoftToken:
+            token = session.query(MicrosoftToken).filter_by(user_id=current_user_id).first() if current_user_id else None
             if token and token.user_id:
                 member = session.query(TeamMember).get(token.user_id)
         if not member:
@@ -2205,17 +2227,22 @@ def verify_session():
 
 @app.route("/api/user/me", methods=["GET"])
 def get_current_user():
-    """Get current user info from Microsoft token or first team member."""
+    """Get current user info from Microsoft token or session user."""
     session = get_session()
     try:
-        # Try to get user from Microsoft token
+        # Try to get user from request header / Flask session
         member = None
-        if MicrosoftToken:
-            token = session.query(MicrosoftToken).first()
+        current_user_id = get_current_user_id()
+        if current_user_id:
+            member = session.query(TeamMember).get(current_user_id)
+        
+        # Fallback: try Microsoft token for the user
+        if not member and MicrosoftToken and current_user_id:
+            token = session.query(MicrosoftToken).filter_by(user_id=current_user_id).first()
             if token and token.user_id:
                 member = session.query(TeamMember).get(token.user_id)
         
-        # Fallback: get first active team member
+        # Last resort fallback: get first active team member
         if not member:
             member = session.query(TeamMember).filter_by(is_active=True).first()
         
@@ -2896,9 +2923,14 @@ def queue_email_for_review():
         # Determine who is composing this email
         composer_name = data.get("generated_by", "Manual")
         if composer_name == "Manual":
-            # Try to get actual user name from Microsoft token
-            if MicrosoftToken:
-                token = session.query(MicrosoftToken).first()
+            # Try to get actual user name from session
+            current_user_id = get_current_user_id()
+            if current_user_id:
+                member = session.query(TeamMember).get(current_user_id)
+                if member:
+                    composer_name = member.name
+            elif MicrosoftToken:
+                token = session.query(MicrosoftToken).filter_by(user_id=current_user_id).first() if current_user_id else None
                 if token and token.user_id:
                     member = session.query(TeamMember).get(token.user_id)
                     if member:
@@ -3022,11 +3054,12 @@ def send_email(email_id):
         if not to_email:
             return jsonify({"error": "No recipient email found for this email"}), 400
         
-        # Get Microsoft token
+        # Get Microsoft token for the current user
         if MicrosoftToken is None:
             return jsonify({"error": "Microsoft integration not configured"}), 500
         
-        token = session.query(MicrosoftToken).first()
+        current_user_id = get_current_user_id()
+        token = session.query(MicrosoftToken).filter_by(user_id=current_user_id).first() if current_user_id else None
         if not token or not token.access_token:
             return jsonify({"error": "Microsoft not connected. Please sign in first."}), 401
         
@@ -3218,11 +3251,12 @@ def check_email_replies():
     global _http_session
     session = get_session()
     try:
-        # Get Microsoft token
+        # Get Microsoft token for the current user
         if MicrosoftToken is None:
             return jsonify({"error": "Microsoft integration not configured"}), 500
         
-        token = session.query(MicrosoftToken).first()
+        current_user_id = get_current_user_id()
+        token = session.query(MicrosoftToken).filter_by(user_id=current_user_id).first() if current_user_id else None
         if not token or not token.access_token:
             return jsonify({"error": "Microsoft not connected"}), 401
         
@@ -3364,8 +3398,9 @@ def send_email_direct():
         if MicrosoftToken is None:
             return jsonify({"error": "Microsoft integration not configured"}), 500
         
-        # Get Microsoft token for sending
-        token = session.query(MicrosoftToken).first()
+        # Get Microsoft token for the current user
+        current_user_id = get_current_user_id()
+        token = session.query(MicrosoftToken).filter_by(user_id=current_user_id).first() if current_user_id else None
         if not token:
             return jsonify({"error": "Microsoft not connected. Please sign in with Microsoft first."}), 401
         
@@ -3760,12 +3795,11 @@ def queue_proposal_email(proposal_id):
         
         # Get current user name
         composer_name = "DW Growth"
-        if MicrosoftToken:
-            token = session.query(MicrosoftToken).first()
-            if token and token.user_id:
-                member = session.query(TeamMember).get(token.user_id)
-                if member:
-                    composer_name = member.name
+        current_user_id = get_current_user_id()
+        if current_user_id:
+            member = session.query(TeamMember).get(current_user_id)
+            if member:
+                composer_name = member.name
         
         # Generate professional HTML proposal matching Orbit preview design
         services_rows = ""

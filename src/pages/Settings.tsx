@@ -25,7 +25,6 @@ interface IntegrationSettings {
 }
 
 interface AppSettings {
-  theme: "light" | "dark" | "system";
   defaultView: "dashboard" | "workflow" | "calendar";
   leadsPerPage: number;
   autoSaveInterval: number;
@@ -61,7 +60,6 @@ export function Settings() {
   });
 
   const [appSettings, setAppSettings] = useState<AppSettings>({
-    theme: "light",
     defaultView: "dashboard",
     leadsPerPage: 50,
     autoSaveInterval: 5,
@@ -610,19 +608,6 @@ export function Settings() {
               <p style={styles.sectionDesc}>Customize your experience</p>
 
               <div style={styles.formGrid}>
-                <div style={styles.formGroup}>
-                  <label style={styles.label}>Theme</label>
-                  <select
-                    value={appSettings.theme}
-                    onChange={(e) => setAppSettings({ ...appSettings, theme: e.target.value as AppSettings["theme"] })}
-                    style={styles.select}
-                  >
-                    <option value="light">Light</option>
-                    <option value="dark">Dark</option>
-                    <option value="system">System</option>
-                  </select>
-                </div>
-
                 <div style={styles.formGroup}>
                   <label style={styles.label}>Default View</label>
                   <select
