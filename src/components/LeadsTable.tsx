@@ -84,7 +84,7 @@ export function LeadsTable({
                   />
                 </td>
                 <td className="business-name">
-                  <Link to={`/lead/${lead.id}`} style={{ color: "#2563eb", textDecoration: "none", fontWeight: 600 }}>
+                  <Link to={`/lead/${lead.id}`} style={{ color: "inherit", textDecoration: "none", fontWeight: 600 }}>
                     {lead.business_name || "N/A"}
                   </Link>
                 </td>
