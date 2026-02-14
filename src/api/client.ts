@@ -346,6 +346,10 @@ export const templatesApi = {
     const response = await api.put<EmailTemplate>(`/templates/${id}`, template);
     return response.data;
   },
+
+  deleteTemplate: async (id: number): Promise<void> => {
+    await api.delete(`/templates/${id}`);
+  },
 };
 
 // Email Generation API

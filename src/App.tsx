@@ -87,6 +87,7 @@ function AppContent() {
           <NavLink to="/reminders">Reminders</NavLink>
           <NavLink to="/performance">Performance</NavLink>
           <NavLink to="/pending-emails">Emails</NavLink>
+          <NavLink to="/templates">Templates</NavLink>
           <NavLink to="/settings">Settings</NavLink>
         </nav>
         <div className="top-bar-right" style={{ display: "flex", alignItems: "center", gap: "8px" }}>

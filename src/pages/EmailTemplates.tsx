@@ -84,7 +84,7 @@ export function EmailTemplates() {
     if (!confirm(`Delete template "${selectedTemplate.name}"?`)) return;
 
     try {
-      await fetch(`/api/templates/${selectedTemplate.id}`, { method: "DELETE" });
+      await templatesApi.deleteTemplate(selectedTemplate.id);
       setTemplates((prev) => prev.filter((t) => t.id !== selectedTemplate.id));
       setSelectedTemplate(null);
     } catch (err) {
