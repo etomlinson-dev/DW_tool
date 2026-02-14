@@ -18,7 +18,7 @@ interface PendingEmail {
   generatedBy: string;
   generatedAt: string;
   sentAt: string | null;
-  status: "pending_review" | "approved" | "rejected" | "sent";
+  status: "draft" | "pending_review" | "approved" | "rejected" | "sent";
   priority: "High" | "Medium" | "Low";
   assignedTo: string;
   reviewNotes: string | null;
