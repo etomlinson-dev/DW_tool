@@ -165,7 +165,7 @@ export function Workflow() {
 
   const formatDate = (date: string | null): string => {
     if (!date) return "";
-    return new Date(date).toLocaleDateString("en-US", { month: "short", day: "numeric" });
+    return new Date(date).toLocaleDateString("en-US", { timeZone: "America/New_York", month: "short", day: "numeric" });
   };
 
   const isOverdue = (date: string | null): boolean => {

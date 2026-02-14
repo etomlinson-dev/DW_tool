@@ -252,7 +252,7 @@ export function Activities() {
   const formatTime = (timestamp: string) => {
     const utc = timestamp.endsWith("Z") ? timestamp : timestamp + "Z";
     const date = new Date(utc);
-    return date.toLocaleTimeString("en-US", { hour: "numeric", minute: "2-digit", hour12: true });
+    return date.toLocaleTimeString("en-US", { timeZone: "America/New_York", hour: "numeric", minute: "2-digit", hour12: true });
   };
 
   const formatDate = (timestamp: string) => {
@@ -266,7 +266,7 @@ export function Activities() {
     } else if (date.toDateString() === yesterday.toDateString()) {
       return "Yesterday";
     }
-    return date.toLocaleDateString("en-US", { month: "short", day: "numeric" });
+    return date.toLocaleDateString("en-US", { timeZone: "America/New_York", month: "short", day: "numeric" });
   };
 
   // Group activities by date

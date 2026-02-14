@@ -608,6 +608,33 @@ export function Dashboard() {
             >
               Apply
             </button>
+            <button
+              onClick={async () => {
+                if (selectedIds.length === 0) return;
+                if (!confirm(`Delete ${selectedIds.length} lead(s)? This cannot be undone.`)) return;
+                try {
+                  await Promise.all(selectedIds.map((id) => leadsApi.deleteLead(id)));
+                  setSelectedIds([]);
+                  const res = await leadsApi.getLeads({ per_page: 200 });
+                  setLeads(res.data);
+                } catch (err) {
+                  console.error("Failed to delete leads:", err);
+                }
+              }}
+              disabled={selectedIds.length === 0}
+              style={{
+                padding: "8px 16px",
+                borderRadius: "8px",
+                border: "1px solid #fecaca",
+                background: "#fff",
+                color: selectedIds.length === 0 ? "#d1d5db" : "#ef4444",
+                fontSize: "13px",
+                fontWeight: 500,
+                cursor: selectedIds.length === 0 ? "not-allowed" : "pointer",
+              }}
+            >
+              Delete Selected
+            </button>
           </div>
         </div>
 

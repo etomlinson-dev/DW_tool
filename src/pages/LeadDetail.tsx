@@ -139,7 +139,7 @@ export function LeadDetail() {
   const formatDate = (dateStr: string | null) => {
     if (!dateStr) return "N/A";
     const utc = dateStr.endsWith("Z") ? dateStr : dateStr + "Z";
-    return new Date(utc).toLocaleString();
+    return new Date(utc).toLocaleString("en-US", { timeZone: "America/New_York" });
   };
 
   if (loading) {
@@ -284,6 +284,31 @@ export function LeadDetail() {
             ))}
           </select>
           <button
+            onClick={async () => {
+              if (!confirm(`Delete "${lead.business_name}"? This cannot be undone.`)) return;
+              try {
+                await leadsApi.deleteLead(lead.id);
+                navigate("/");
+              } catch (err) {
+                console.error("Failed to delete lead:", err);
+                alert("Failed to delete lead.");
+              }
+            }}
+            style={{
+              padding: "8px 14px",
+              borderRadius: "10px",
+              border: "1px solid #fecaca",
+              background: "#fff",
+              color: "#ef4444",
+              fontSize: "13px",
+              fontWeight: 600,
+              cursor: "pointer",
+              whiteSpace: "nowrap",
+            }}
+          >
+            Delete
+          </button>
+          <button
             onClick={() => setShowComposer(true)}
             style={{
               padding: "8px 18px",
@@ -397,6 +422,7 @@ export function LeadDetail() {
                     { label: "Phone", key: "phone", type: "tel" },
                     { label: "Website", key: "website", type: "url" },
                     { label: "Industry", key: "industry", type: "text" },
+                    { label: "Location", key: "location", type: "text" },
                   ].map((field) => (
                     <div key={field.key}>
                       <label style={{ display: "block", fontSize: "12px", fontWeight: 600, color: "#6b7280", marginBottom: "6px", textTransform: "uppercase", letterSpacing: "0.04em" }}>{field.label}</label>
@@ -469,6 +495,7 @@ export function LeadDetail() {
                     { label: "Phone", value: lead.phone, link: lead.phone ? `tel:${lead.phone}` : undefined },
                     { label: "Website", value: lead.website, link: lead.website || undefined },
                     { label: "Industry", value: lead.industry },
+                    { label: "Location", value: lead.location },
                     { label: "Service Category", value: lead.service_category },
                     { label: "Source", value: lead.source },
                     { label: "Assigned Rep", value: lead.assigned_rep || "Unassigned" },
@@ -611,7 +638,7 @@ export function LeadDetail() {
                   <div style={{ padding: "18px", background: "#f9fafb", borderRadius: "14px" }}>
                     <span style={{ display: "block", fontSize: "11px", fontWeight: 600, color: "#9ca3af", marginBottom: "6px", textTransform: "uppercase", letterSpacing: "0.05em" }}>Next Follow-up</span>
                     <span style={{ fontSize: "14px", fontWeight: 600, color: lead.next_follow_up_date ? "#1f2937" : "#d1d5db" }}>
-                      {lead.next_follow_up_date ? new Date(lead.next_follow_up_date).toLocaleDateString() : "Not scheduled"}
+                      {lead.next_follow_up_date ? new Date(lead.next_follow_up_date).toLocaleDateString("en-US", { timeZone: "America/New_York" }) : "Not scheduled"}
                     </span>
                   </div>
                 </div>
@@ -666,7 +693,7 @@ export function LeadDetail() {
                   <div style={{ padding: "18px", background: "#f9fafb", borderRadius: "14px" }}>
                     <span style={{ display: "block", fontSize: "11px", fontWeight: 600, color: "#9ca3af", marginBottom: "6px", textTransform: "uppercase", letterSpacing: "0.05em" }}>Expected Close</span>
                     <span style={{ fontSize: "14px", fontWeight: 600, color: lead.expected_close_date ? "#1f2937" : "#d1d5db" }}>
-                      {lead.expected_close_date ? new Date(lead.expected_close_date).toLocaleDateString() : "Not set"}
+                      {lead.expected_close_date ? new Date(lead.expected_close_date).toLocaleDateString("en-US", { timeZone: "America/New_York" }) : "Not set"}
                     </span>
                   </div>
                   <div style={{ padding: "18px", background: "#f9fafb", borderRadius: "14px" }}>

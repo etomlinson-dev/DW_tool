@@ -226,7 +226,7 @@ export function Dialer() {
 
   const formatDate = (dateStr: string | null) => {
     if (!dateStr) return "N/A";
-    return new Date(dateStr).toLocaleDateString();
+    return new Date(dateStr).toLocaleDateString("en-US", { timeZone: "America/New_York" });
   };
 
   if (loading) {

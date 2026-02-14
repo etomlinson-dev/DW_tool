@@ -28,6 +28,7 @@ export interface Lead {
   activity_count: number;
   notes: string | null;
   tags: string[];
+  location: string | null;
   
   // Service category
   service_category: ServiceCategory | null;

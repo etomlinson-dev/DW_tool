@@ -289,6 +289,7 @@ export function PendingEmails() {
     const utcString = dateString.endsWith("Z") ? dateString : dateString + "Z";
     const date = new Date(utcString);
     return date.toLocaleDateString("en-US", {
+      timeZone: "America/New_York",
       month: "short",
       day: "numeric",
       hour: "numeric",

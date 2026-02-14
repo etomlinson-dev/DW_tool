@@ -159,6 +159,7 @@ class Lead(Base):
     activity_count = Column(Integer, default=0)
     notes = Column(String)
     tags = Column(String)
+    location = Column(String)  # City, State or full address
     
     # Service category
     service_category = Column(String)  # Marketing, Consulting, Web Development, Other
@@ -235,6 +236,7 @@ class Lead(Base):
             "activity_count": self.activity_count,
             "notes": self.notes,
             "tags": json.loads(self.tags) if self.tags else [],
+            "location": self.location,
             "service_category": self.service_category,
             "campaign_id": self.campaign_id,
             "first_outreach_date": self.first_outreach_date.isoformat() if self.first_outreach_date else None,
@@ -1215,6 +1217,7 @@ def create_lead():
             notes=data.get("notes"),
             tags=tags_json,
             deal_value=deal_value,
+            location=data.get("location"),
         )
         session.add(lead)
         session.commit()
@@ -1237,7 +1240,7 @@ def update_lead(lead_id):
         
         data = request.json
         for key in ["business_name", "industry", "contact_name", "email", "phone", 
-                    "source", "assigned_rep", "status", "notes"]:
+                    "source", "assigned_rep", "status", "notes", "location", "service_category"]:
             if key in data:
                 setattr(lead, key, data[key])
         

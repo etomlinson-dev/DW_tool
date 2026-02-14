@@ -57,7 +57,7 @@ export function EmailTimelineView({ leadId, leadName }: EmailTimelineViewProps) 
   const formatDate = (dateStr?: string) => {
     if (!dateStr) return '';
     const date = new Date(dateStr);
-    return date.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
+    return date.toLocaleDateString('en-US', { timeZone: 'America/New_York', month: 'short', day: 'numeric' });
   };
 
   const getConfig = (category: string) => {

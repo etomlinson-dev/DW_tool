@@ -53,6 +53,7 @@ export function BulkImport() {
     { id: "phone", label: "Phone", required: false },
     { id: "website", label: "Website", required: false },
     { id: "industry", label: "Industry", required: false },
+    { id: "location", label: "Location", required: false },
     { id: "source", label: "Lead Source", required: false },
     { id: "service_category", label: "Service Category", required: false },
     { id: "assigned_rep", label: "Assigned Rep", required: false },
