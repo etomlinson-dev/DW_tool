@@ -8,6 +8,7 @@ export function EmailTemplates() {
   const [selectedTemplate, setSelectedTemplate] = useState<EmailTemplate | null>(null);
   const [isEditing, setIsEditing] = useState(false);
   const [isCreating, setIsCreating] = useState(false);
+  const [selectedCategory, setSelectedCategory] = useState<string | null>(null);
 
   // Form state
   const [formData, setFormData] = useState({
@@ -93,6 +94,9 @@ export function EmailTemplates() {
   };
 
   const categories = [...new Set(templates.map((t) => t.category).filter(Boolean))];
+  const filteredTemplates = selectedCategory
+    ? templates.filter((t) => t.category === selectedCategory)
+    : templates;
 
   return (
     <div style={styles.container}>
@@ -107,11 +111,24 @@ export function EmailTemplates() {
 
         {/* Category Filter */}
         <div style={styles.categoryTabs}>
-          <button style={{ ...styles.categoryTab, ...styles.categoryTabActive }}>
+          <button
+            onClick={() => setSelectedCategory(null)}
+            style={{
+              ...styles.categoryTab,
+              ...(selectedCategory === null ? styles.categoryTabActive : {}),
+            }}
+          >
             All ({templates.length})
           </button>
           {categories.map((cat) => (
-            <button key={cat} style={styles.categoryTab}>
+            <button
+              key={cat}
+              onClick={() => setSelectedCategory(cat!)}
+              style={{
+                ...styles.categoryTab,
+                ...(selectedCategory === cat ? styles.categoryTabActive : {}),
+              }}
+            >
               {cat} ({templates.filter((t) => t.category === cat).length})
             </button>
           ))}
@@ -121,15 +138,15 @@ export function EmailTemplates() {
         <div style={styles.templateList}>
           {loading ? (
             <div style={styles.loading}>Loading templates...</div>
-          ) : templates.length === 0 ? (
+          ) : filteredTemplates.length === 0 ? (
             <div style={styles.empty}>
-              <p>No templates yet.</p>
+              <p>{selectedCategory ? `No templates in "${selectedCategory}".` : "No templates yet."}</p>
               <button onClick={handleCreate} style={styles.createFirstBtn}>
                 Create your first template
               </button>
             </div>
           ) : (
-            templates.map((template) => (
+            filteredTemplates.map((template) => (
               <div
                 key={template.id}
                 onClick={() => handleSelectTemplate(template)}
