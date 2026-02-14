@@ -158,112 +158,214 @@ export function LeadDetail() {
     );
   }
 
-  const tabStyles = {
-    container: {
-      display: "flex",
-      gap: "4px",
-      marginBottom: "24px",
-      background: "#f3f4f6",
-      padding: "4px",
-      borderRadius: "12px",
-      width: "fit-content",
-    } as React.CSSProperties,
-    tab: {
-      padding: "10px 20px",
-      border: "none",
-      background: "transparent",
-      borderRadius: "8px",
-      fontSize: "14px",
-      fontWeight: 500,
-      color: "#6b7280",
-      cursor: "pointer",
-    } as React.CSSProperties,
-    activeTab: {
-      background: "#fff",
-      color: "#1f2937",
-      boxShadow: "0 1px 3px rgba(0,0,0,0.1)",
-    } as React.CSSProperties,
+  const statusColors: Record<string, { bg: string; text: string; dot: string }> = {
+    "New": { bg: "#eef2ff", text: "#4338ca", dot: "#6366f1" },
+    "Contacted": { bg: "#fef3c7", text: "#92400e", dot: "#f59e0b" },
+    "Qualified": { bg: "#d1fae5", text: "#065f46", dot: "#10b981" },
+    "Proposal": { bg: "#dbeafe", text: "#1e40af", dot: "#3b82f6" },
+    "Negotiation": { bg: "#fce7f3", text: "#9d174d", dot: "#ec4899" },
+    "Won": { bg: "#d1fae5", text: "#065f46", dot: "#10b981" },
+    "Lost": { bg: "#fee2e2", text: "#991b1b", dot: "#ef4444" },
+  };
+
+  const currentStatusColor = statusColors[lead.status] || { bg: "#f3f4f6", text: "#374151", dot: "#6b7280" };
+
+  const activityIcons: Record<string, string> = {
+    "Call": "📞", "Email": "📧", "Meeting": "📅", "Note": "📝",
   };
 
   return (
-    <div className="lead-detail" style={{ padding: "24px", maxWidth: "1344px", margin: "0 auto" }}>
-      {/* Header */}
-      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "24px" }}>
-        <div style={{ display: "flex", alignItems: "center", gap: "16px" }}>
-          <button
-            onClick={() => navigate(-1)}
-            style={{ color: "#6b7280", textDecoration: "none", fontSize: "14px", background: "none", border: "none", cursor: "pointer", padding: 0 }}
-          >
-            ← Back
-          </button>
-          <h1 style={{ fontSize: "24px", fontWeight: 700, color: "#1f2937", margin: 0 }}>
-            {lead.business_name}
-          </h1>
+    <div className="lead-detail" style={{ padding: "32px 40px", maxWidth: "1344px", margin: "0 auto" }}>
+      {/* Breadcrumb */}
+      <div style={{ marginBottom: "20px" }}>
+        <button
+          onClick={() => navigate(-1)}
+          style={{ color: "#9ca3af", fontSize: "13px", background: "none", border: "none", cursor: "pointer", padding: 0, display: "flex", alignItems: "center", gap: "6px" }}
+        >
+          <span style={{ fontSize: "16px" }}>&#8592;</span> Back to Leads
+        </button>
+      </div>
+
+      {/* Hero Header Card */}
+      <div style={{
+        background: "linear-gradient(135deg, #fff 0%, #f8fafc 100%)",
+        borderRadius: "20px",
+        padding: "28px 32px",
+        boxShadow: "0 1px 3px rgba(0,0,0,0.06), 0 4px 16px rgba(0,0,0,0.04)",
+        border: "1px solid #f0f0f0",
+        marginBottom: "28px",
+        display: "flex",
+        justifyContent: "space-between",
+        alignItems: "flex-start",
+      }}>
+        <div style={{ display: "flex", gap: "20px", alignItems: "flex-start" }}>
+          {/* Avatar / Initial */}
+          <div style={{
+            width: "56px",
+            height: "56px",
+            borderRadius: "14px",
+            background: "linear-gradient(135deg, #667eea 0%, #764ba2 100%)",
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "center",
+            color: "#fff",
+            fontSize: "22px",
+            fontWeight: 700,
+            flexShrink: 0,
+          }}>
+            {(lead.business_name || "?")[0].toUpperCase()}
+          </div>
+          <div>
+            <h1 style={{ fontSize: "22px", fontWeight: 700, color: "#1f2937", margin: "0 0 6px" }}>
+              {lead.business_name}
+            </h1>
+            <div style={{ display: "flex", alignItems: "center", gap: "12px", flexWrap: "wrap" }}>
+              {/* Status Badge */}
+              <div style={{
+                display: "inline-flex",
+                alignItems: "center",
+                gap: "6px",
+                padding: "4px 12px",
+                borderRadius: "20px",
+                background: currentStatusColor.bg,
+                fontSize: "12px",
+                fontWeight: 600,
+                color: currentStatusColor.text,
+              }}>
+                <span style={{ width: "6px", height: "6px", borderRadius: "50%", background: currentStatusColor.dot }} />
+                {lead.status}
+              </div>
+              {lead.industry && (
+                <span style={{ fontSize: "13px", color: "#6b7280" }}>{lead.industry}</span>
+              )}
+              {lead.assigned_rep && (
+                <span style={{ fontSize: "13px", color: "#6b7280" }}>
+                  <span style={{ color: "#d1d5db" }}>|</span> {lead.assigned_rep}
+                </span>
+              )}
+            </div>
+            {/* Contact quick-info row */}
+            <div style={{ display: "flex", gap: "16px", marginTop: "12px", flexWrap: "wrap" }}>
+              {lead.email && (
+                <a href={`mailto:${lead.email}`} style={{ fontSize: "13px", color: "#667eea", textDecoration: "none", display: "flex", alignItems: "center", gap: "4px" }}>
+                  <span>&#9993;</span> {lead.email}
+                </a>
+              )}
+              {lead.phone && (
+                <a href={`tel:${lead.phone}`} style={{ fontSize: "13px", color: "#667eea", textDecoration: "none", display: "flex", alignItems: "center", gap: "4px" }}>
+                  <span>&#9742;</span> {lead.phone}
+                </a>
+              )}
+              {lead.website && (
+                <a href={lead.website} target="_blank" rel="noopener noreferrer" style={{ fontSize: "13px", color: "#667eea", textDecoration: "none", display: "flex", alignItems: "center", gap: "4px" }}>
+                  <span>&#127760;</span> Website
+                </a>
+              )}
+            </div>
+          </div>
+        </div>
+
+        <div style={{ display: "flex", gap: "10px", alignItems: "center", flexShrink: 0 }}>
           <select
             value={lead.status}
             onChange={(e) => handleStatusChange(e.target.value as LeadStatus)}
             style={{
-              padding: "6px 12px",
-              borderRadius: "8px",
+              padding: "8px 14px",
+              borderRadius: "10px",
               border: "1px solid #e5e7eb",
               fontSize: "13px",
               background: "#fff",
+              color: "#374151",
+              cursor: "pointer",
             }}
           >
             {LEAD_STATUS_OPTIONS.map((status) => (
-              <option key={status} value={status}>
-                {status}
-              </option>
+              <option key={status} value={status}>{status}</option>
             ))}
           </select>
+          <button
+            onClick={() => setShowComposer(true)}
+            style={{
+              padding: "8px 18px",
+              borderRadius: "10px",
+              border: "none",
+              background: "linear-gradient(135deg, #667eea 0%, #764ba2 100%)",
+              color: "#fff",
+              fontSize: "13px",
+              fontWeight: 600,
+              cursor: "pointer",
+              whiteSpace: "nowrap",
+            }}
+          >
+            Send Email
+          </button>
         </div>
-        <button
-          onClick={() => setShowComposer(true)}
-          style={{
-            padding: "10px 20px",
-            borderRadius: "8px",
-            border: "none",
-            background: "linear-gradient(135deg, #667eea 0%, #764ba2 100%)",
-            color: "#fff",
-            fontSize: "14px",
-            fontWeight: 500,
-            cursor: "pointer",
-          }}
-        >
-          ✉️ Send Email
-        </button>
       </div>
 
       {/* Tabs */}
-      <div style={tabStyles.container}>
+      <div style={{
+        display: "flex",
+        gap: "2px",
+        marginBottom: "24px",
+        background: "#f3f4f6",
+        padding: "4px",
+        borderRadius: "14px",
+        width: "fit-content",
+      }}>
         {(["info", "activity", "outreach", "emails"] as TabType[]).map((tab) => (
           <button
             key={tab}
             onClick={() => setActiveTab(tab)}
             style={{
-              ...tabStyles.tab,
-              ...(activeTab === tab ? tabStyles.activeTab : {}),
+              padding: "9px 22px",
+              border: "none",
+              borderRadius: "10px",
+              fontSize: "13px",
+              fontWeight: 600,
+              cursor: "pointer",
+              transition: "all 0.15s ease",
+              ...(activeTab === tab
+                ? { background: "#fff", color: "#1f2937", boxShadow: "0 1px 4px rgba(0,0,0,0.08)" }
+                : { background: "transparent", color: "#9ca3af" }),
             }}
           >
-            {tab === "info" && "📋 Info"}
-            {tab === "activity" && "📊 Activity"}
-            {tab === "outreach" && "🎯 Outreach"}
-            {tab === "emails" && `📧 Emails (${emails.length})`}
+            {tab === "info" && "Info"}
+            {tab === "activity" && "Activity"}
+            {tab === "outreach" && "Outreach"}
+            {tab === "emails" && `Emails (${emails.length})`}
           </button>
         ))}
       </div>
 
-      <div style={{ display: "grid", gridTemplateColumns: "1fr 320px", gap: "24px" }}>
+      <div style={{ display: "grid", gridTemplateColumns: "1fr 300px", gap: "24px" }}>
         {/* Main Content */}
         <div>
           {activeTab === "info" && (
-            <div className="card" style={{ background: "#fff", borderRadius: "16px", padding: "24px", boxShadow: "0 4px 12px rgba(0,0,0,0.08)" }}>
-              <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "20px" }}>
-                <h3 style={{ fontSize: "16px", fontWeight: 600, color: "#1f2937", margin: 0 }}>Lead Information</h3>
+            <div style={{
+              background: "#fff",
+              borderRadius: "20px",
+              padding: "28px",
+              boxShadow: "0 1px 3px rgba(0,0,0,0.06), 0 4px 16px rgba(0,0,0,0.04)",
+              border: "1px solid #f0f0f0",
+            }}>
+              <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "24px" }}>
+                <h3 style={{ fontSize: "15px", fontWeight: 700, color: "#1f2937", margin: 0, letterSpacing: "-0.01em" }}>Lead Information</h3>
                 {!isEditing ? (
                   <button
                     onClick={() => setIsEditing(true)}
-                    style={{ padding: "6px 16px", borderRadius: "8px", border: "1px solid #e5e7eb", background: "#fff", fontSize: "13px", cursor: "pointer" }}
+                    style={{
+                      padding: "7px 18px",
+                      borderRadius: "10px",
+                      border: "1px solid #e5e7eb",
+                      background: "#fff",
+                      fontSize: "13px",
+                      fontWeight: 500,
+                      cursor: "pointer",
+                      color: "#374151",
+                      transition: "all 0.15s ease",
+                    }}
+                    onMouseEnter={(e) => { e.currentTarget.style.background = "#f9fafb"; e.currentTarget.style.borderColor = "#d1d5db"; }}
+                    onMouseLeave={(e) => { e.currentTarget.style.background = "#fff"; e.currentTarget.style.borderColor = "#e5e7eb"; }}
                   >
                     Edit
                   </button>
@@ -271,13 +373,13 @@ export function LeadDetail() {
                   <div style={{ display: "flex", gap: "8px" }}>
                     <button
                       onClick={handleSave}
-                      style={{ padding: "6px 16px", borderRadius: "8px", border: "none", background: "#10b981", color: "#fff", fontSize: "13px", cursor: "pointer" }}
+                      style={{ padding: "7px 18px", borderRadius: "10px", border: "none", background: "#10b981", color: "#fff", fontSize: "13px", fontWeight: 600, cursor: "pointer" }}
                     >
                       Save
                     </button>
                     <button
                       onClick={() => { setIsEditing(false); setEditForm(lead); }}
-                      style={{ padding: "6px 16px", borderRadius: "8px", border: "1px solid #e5e7eb", background: "#fff", fontSize: "13px", cursor: "pointer" }}
+                      style={{ padding: "7px 18px", borderRadius: "10px", border: "1px solid #e5e7eb", background: "#fff", fontSize: "13px", fontWeight: 500, cursor: "pointer", color: "#374151" }}
                     >
                       Cancel
                     </button>
@@ -286,7 +388,7 @@ export function LeadDetail() {
               </div>
 
               {isEditing ? (
-                <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "16px" }}>
+                <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "18px" }}>
                   {[
                     { label: "Business Name", key: "business_name", type: "text" },
                     { label: "Contact Name", key: "contact_name", type: "text" },
@@ -297,21 +399,23 @@ export function LeadDetail() {
                     { label: "Industry", key: "industry", type: "text" },
                   ].map((field) => (
                     <div key={field.key}>
-                      <label style={{ display: "block", fontSize: "13px", color: "#6b7280", marginBottom: "6px" }}>{field.label}</label>
+                      <label style={{ display: "block", fontSize: "12px", fontWeight: 600, color: "#6b7280", marginBottom: "6px", textTransform: "uppercase", letterSpacing: "0.04em" }}>{field.label}</label>
                       <input
                         type={field.type}
                         value={(editForm as Record<string, string>)[field.key] || ""}
                         onChange={(e) => setEditForm({ ...editForm, [field.key]: e.target.value })}
-                        style={{ width: "100%", padding: "10px 12px", borderRadius: "8px", border: "1px solid #e5e7eb", fontSize: "14px", boxSizing: "border-box" }}
+                        style={{ width: "100%", padding: "10px 14px", borderRadius: "10px", border: "1px solid #e5e7eb", fontSize: "14px", boxSizing: "border-box", transition: "border-color 0.15s ease", outline: "none" }}
+                        onFocus={(e) => e.currentTarget.style.borderColor = "#667eea"}
+                        onBlur={(e) => e.currentTarget.style.borderColor = "#e5e7eb"}
                       />
                     </div>
                   ))}
                   <div>
-                    <label style={{ display: "block", fontSize: "13px", color: "#6b7280", marginBottom: "6px" }}>Source</label>
+                    <label style={{ display: "block", fontSize: "12px", fontWeight: 600, color: "#6b7280", marginBottom: "6px", textTransform: "uppercase", letterSpacing: "0.04em" }}>Source</label>
                     <select
                       value={editForm.source || ""}
                       onChange={(e) => setEditForm({ ...editForm, source: e.target.value })}
-                      style={{ width: "100%", padding: "10px 12px", borderRadius: "8px", border: "1px solid #e5e7eb", fontSize: "14px" }}
+                      style={{ width: "100%", padding: "10px 14px", borderRadius: "10px", border: "1px solid #e5e7eb", fontSize: "14px" }}
                     >
                       <option value="">Select Source</option>
                       {LEAD_SOURCE_OPTIONS.map((source) => (
@@ -320,11 +424,11 @@ export function LeadDetail() {
                     </select>
                   </div>
                   <div>
-                    <label style={{ display: "block", fontSize: "13px", color: "#6b7280", marginBottom: "6px" }}>Service Category</label>
+                    <label style={{ display: "block", fontSize: "12px", fontWeight: 600, color: "#6b7280", marginBottom: "6px", textTransform: "uppercase", letterSpacing: "0.04em" }}>Service Category</label>
                     <select
                       value={editForm.service_category || ""}
                       onChange={(e) => setEditForm({ ...editForm, service_category: e.target.value })}
-                      style={{ width: "100%", padding: "10px 12px", borderRadius: "8px", border: "1px solid #e5e7eb", fontSize: "14px" }}
+                      style={{ width: "100%", padding: "10px 14px", borderRadius: "10px", border: "1px solid #e5e7eb", fontSize: "14px" }}
                     >
                       <option value="">Select Category</option>
                       {SERVICE_CATEGORY_OPTIONS.map((cat) => (
@@ -333,11 +437,11 @@ export function LeadDetail() {
                     </select>
                   </div>
                   <div>
-                    <label style={{ display: "block", fontSize: "13px", color: "#6b7280", marginBottom: "6px" }}>Assigned Rep</label>
+                    <label style={{ display: "block", fontSize: "12px", fontWeight: 600, color: "#6b7280", marginBottom: "6px", textTransform: "uppercase", letterSpacing: "0.04em" }}>Assigned Rep</label>
                     <select
                       value={editForm.assigned_rep || ""}
                       onChange={(e) => setEditForm({ ...editForm, assigned_rep: e.target.value })}
-                      style={{ width: "100%", padding: "10px 12px", borderRadius: "8px", border: "1px solid #e5e7eb", fontSize: "14px" }}
+                      style={{ width: "100%", padding: "10px 14px", borderRadius: "10px", border: "1px solid #e5e7eb", fontSize: "14px" }}
                     >
                       <option value="">Unassigned</option>
                       {reps.map((rep) => (
@@ -346,19 +450,21 @@ export function LeadDetail() {
                     </select>
                   </div>
                   <div style={{ gridColumn: "1 / -1" }}>
-                    <label style={{ display: "block", fontSize: "13px", color: "#6b7280", marginBottom: "6px" }}>Notes</label>
+                    <label style={{ display: "block", fontSize: "12px", fontWeight: 600, color: "#6b7280", marginBottom: "6px", textTransform: "uppercase", letterSpacing: "0.04em" }}>Notes</label>
                     <textarea
                       value={editForm.notes || ""}
                       onChange={(e) => setEditForm({ ...editForm, notes: e.target.value })}
                       rows={4}
-                      style={{ width: "100%", padding: "12px", borderRadius: "8px", border: "1px solid #e5e7eb", fontSize: "14px", resize: "vertical", boxSizing: "border-box" }}
+                      style={{ width: "100%", padding: "12px 14px", borderRadius: "10px", border: "1px solid #e5e7eb", fontSize: "14px", resize: "vertical", boxSizing: "border-box", fontFamily: "inherit" }}
+                      onFocus={(e) => e.currentTarget.style.borderColor = "#667eea"}
+                      onBlur={(e) => e.currentTarget.style.borderColor = "#e5e7eb"}
                     />
                   </div>
                 </div>
               ) : (
-                <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "16px" }}>
+                <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "4px" }}>
                   {[
-                    { label: "Contact", value: lead.contact_name ? `${lead.contact_name}${lead.contact_title ? ` (${lead.contact_title})` : ''}` : null },
+                    { label: "Contact", value: lead.contact_name ? `${lead.contact_name}${lead.contact_title ? ` - ${lead.contact_title}` : ''}` : null },
                     { label: "Email", value: lead.email, link: lead.email ? `mailto:${lead.email}` : undefined },
                     { label: "Phone", value: lead.phone, link: lead.phone ? `tel:${lead.phone}` : undefined },
                     { label: "Website", value: lead.website, link: lead.website || undefined },
@@ -369,22 +475,25 @@ export function LeadDetail() {
                     { label: "Activities", value: lead.activity_count.toString() },
                     { label: "Last Activity", value: formatDate(lead.last_activity) },
                   ].map((item) => (
-                    <div key={item.label} style={{ padding: "12px", background: "#f9fafb", borderRadius: "8px" }}>
-                      <span style={{ display: "block", fontSize: "12px", color: "#9ca3af", marginBottom: "4px" }}>{item.label}</span>
+                    <div key={item.label} style={{ padding: "14px 16px", borderRadius: "12px", transition: "background 0.15s ease" }}
+                      onMouseEnter={(e) => e.currentTarget.style.background = "#f9fafb"}
+                      onMouseLeave={(e) => e.currentTarget.style.background = "transparent"}
+                    >
+                      <span style={{ display: "block", fontSize: "11px", fontWeight: 600, color: "#9ca3af", marginBottom: "4px", textTransform: "uppercase", letterSpacing: "0.05em" }}>{item.label}</span>
                       {item.link ? (
-                        <a href={item.link} target={item.label === "Website" ? "_blank" : undefined} rel="noopener noreferrer" style={{ fontSize: "14px", color: "#667eea", textDecoration: "none" }}>{item.value || "N/A"}</a>
+                        <a href={item.link} target={item.label === "Website" ? "_blank" : undefined} rel="noopener noreferrer" style={{ fontSize: "14px", color: "#667eea", textDecoration: "none", fontWeight: 500 }}>{item.value || "N/A"}</a>
                       ) : (
-                        <span style={{ fontSize: "14px", color: "#1f2937" }}>{item.value || "N/A"}</span>
+                        <span style={{ fontSize: "14px", color: "#1f2937", fontWeight: 500 }}>{item.value || "N/A"}</span>
                       )}
                     </div>
                   ))}
                   {/* Multiple emails */}
                   {(lead.emails?.length || 0) > 0 && (
-                    <div style={{ gridColumn: "1 / -1", padding: "12px", background: "#f9fafb", borderRadius: "8px" }}>
-                      <span style={{ display: "block", fontSize: "12px", color: "#9ca3af", marginBottom: "8px" }}>Additional Emails</span>
+                    <div style={{ gridColumn: "1 / -1", padding: "14px 16px", borderRadius: "12px", background: "#f9fafb" }}>
+                      <span style={{ display: "block", fontSize: "11px", fontWeight: 600, color: "#9ca3af", marginBottom: "8px", textTransform: "uppercase", letterSpacing: "0.05em" }}>Additional Emails</span>
                       <div style={{ display: "flex", flexWrap: "wrap", gap: "8px" }}>
                         {lead.emails?.map((e, idx) => (
-                          <a key={idx} href={`mailto:${e.email}`} style={{ padding: "4px 10px", background: "#eef2ff", color: "#4f46e5", borderRadius: "6px", fontSize: "13px", textDecoration: "none" }}>
+                          <a key={idx} href={`mailto:${e.email}`} style={{ padding: "5px 12px", background: "#eef2ff", color: "#4f46e5", borderRadius: "8px", fontSize: "13px", textDecoration: "none", fontWeight: 500 }}>
                             {e.label}: {e.email}
                           </a>
                         ))}
@@ -393,11 +502,11 @@ export function LeadDetail() {
                   )}
                   {/* Multiple phones */}
                   {(lead.phones?.length || 0) > 0 && (
-                    <div style={{ gridColumn: "1 / -1", padding: "12px", background: "#f9fafb", borderRadius: "8px" }}>
-                      <span style={{ display: "block", fontSize: "12px", color: "#9ca3af", marginBottom: "8px" }}>Additional Phones</span>
+                    <div style={{ gridColumn: "1 / -1", padding: "14px 16px", borderRadius: "12px", background: "#f9fafb" }}>
+                      <span style={{ display: "block", fontSize: "11px", fontWeight: 600, color: "#9ca3af", marginBottom: "8px", textTransform: "uppercase", letterSpacing: "0.05em" }}>Additional Phones</span>
                       <div style={{ display: "flex", flexWrap: "wrap", gap: "8px" }}>
                         {lead.phones?.map((p, idx) => (
-                          <a key={idx} href={`tel:${p.phone}`} style={{ padding: "4px 10px", background: "#f0fdf4", color: "#15803d", borderRadius: "6px", fontSize: "13px", textDecoration: "none" }}>
+                          <a key={idx} href={`tel:${p.phone}`} style={{ padding: "5px 12px", background: "#f0fdf4", color: "#15803d", borderRadius: "8px", fontSize: "13px", textDecoration: "none", fontWeight: 500 }}>
                             {p.label}: {p.phone}
                           </a>
                         ))}
@@ -405,9 +514,9 @@ export function LeadDetail() {
                     </div>
                   )}
                   {lead.notes && (
-                    <div style={{ gridColumn: "1 / -1", padding: "12px", background: "#f9fafb", borderRadius: "8px" }}>
-                      <span style={{ display: "block", fontSize: "12px", color: "#9ca3af", marginBottom: "4px" }}>Notes</span>
-                      <span style={{ fontSize: "14px", color: "#1f2937" }}>{lead.notes}</span>
+                    <div style={{ gridColumn: "1 / -1", padding: "14px 16px", borderRadius: "12px", background: "#f9fafb" }}>
+                      <span style={{ display: "block", fontSize: "11px", fontWeight: 600, color: "#9ca3af", marginBottom: "4px", textTransform: "uppercase", letterSpacing: "0.05em" }}>Notes</span>
+                      <span style={{ fontSize: "14px", color: "#1f2937", lineHeight: 1.6 }}>{lead.notes}</span>
                     </div>
                   )}
                 </div>
@@ -416,22 +525,57 @@ export function LeadDetail() {
           )}
 
           {activeTab === "activity" && (
-            <div className="card" style={{ background: "#fff", borderRadius: "16px", padding: "24px", boxShadow: "0 4px 12px rgba(0,0,0,0.08)" }}>
-              <h3 style={{ fontSize: "16px", fontWeight: 600, color: "#1f2937", margin: "0 0 20px" }}>Activity Log</h3>
+            <div style={{
+              background: "#fff",
+              borderRadius: "20px",
+              padding: "28px",
+              boxShadow: "0 1px 3px rgba(0,0,0,0.06), 0 4px 16px rgba(0,0,0,0.04)",
+              border: "1px solid #f0f0f0",
+            }}>
+              <h3 style={{ fontSize: "15px", fontWeight: 700, color: "#1f2937", margin: "0 0 24px", letterSpacing: "-0.01em" }}>Activity Log</h3>
               {logs.length === 0 ? (
-                <p style={{ textAlign: "center", color: "#9ca3af", padding: "24px" }}>No activities logged yet.</p>
+                <div style={{ textAlign: "center", padding: "48px 24px", color: "#9ca3af" }}>
+                  <div style={{ fontSize: "36px", marginBottom: "12px", opacity: 0.5 }}>📋</div>
+                  <p style={{ fontSize: "14px", margin: 0 }}>No activities logged yet.</p>
+                </div>
               ) : (
-                <div style={{ display: "flex", flexDirection: "column", gap: "12px" }}>
+                <div style={{ display: "flex", flexDirection: "column", gap: "8px" }}>
                   {logs.map((log) => (
-                    <div key={log.id} style={{ padding: "16px", background: "#f9fafb", borderRadius: "12px" }}>
-                      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "8px" }}>
-                        <div style={{ display: "flex", gap: "8px", alignItems: "center" }}>
-                          <span style={{ padding: "4px 8px", background: "#667eea", color: "#fff", borderRadius: "6px", fontSize: "12px" }}>{log.activity_type}</span>
-                          <span style={{ padding: "4px 8px", background: "#e5e7eb", borderRadius: "6px", fontSize: "12px" }}>{log.outcome}</span>
-                        </div>
-                        <span style={{ fontSize: "12px", color: "#9ca3af" }}>{formatDate(log.timestamp)}</span>
+                    <div key={log.id} style={{
+                      padding: "16px 18px",
+                      borderRadius: "14px",
+                      border: "1px solid #f3f4f6",
+                      transition: "all 0.15s ease",
+                      display: "flex",
+                      alignItems: "flex-start",
+                      gap: "14px",
+                    }}
+                      onMouseEnter={(e) => { e.currentTarget.style.background = "#f9fafb"; e.currentTarget.style.borderColor = "#e5e7eb"; }}
+                      onMouseLeave={(e) => { e.currentTarget.style.background = "transparent"; e.currentTarget.style.borderColor = "#f3f4f6"; }}
+                    >
+                      <div style={{
+                        width: "36px",
+                        height: "36px",
+                        borderRadius: "10px",
+                        background: log.activity_type === "Call" ? "#f0fdf4" : log.activity_type === "Email" ? "#eef2ff" : log.activity_type === "Meeting" ? "#fef3c7" : "#f3f4f6",
+                        display: "flex",
+                        alignItems: "center",
+                        justifyContent: "center",
+                        fontSize: "16px",
+                        flexShrink: 0,
+                      }}>
+                        {activityIcons[log.activity_type] || "📌"}
                       </div>
-                      {log.notes && <p style={{ fontSize: "13px", color: "#6b7280", margin: 0 }}>{log.notes}</p>}
+                      <div style={{ flex: 1, minWidth: 0 }}>
+                        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "4px" }}>
+                          <div style={{ display: "flex", gap: "8px", alignItems: "center" }}>
+                            <span style={{ fontSize: "13px", fontWeight: 600, color: "#1f2937" }}>{log.activity_type}</span>
+                            <span style={{ fontSize: "12px", color: "#9ca3af", background: "#f3f4f6", padding: "2px 8px", borderRadius: "6px" }}>{log.outcome}</span>
+                          </div>
+                          <span style={{ fontSize: "12px", color: "#9ca3af" }}>{formatDate(log.timestamp)}</span>
+                        </div>
+                        {log.notes && <p style={{ fontSize: "13px", color: "#6b7280", margin: 0, lineHeight: 1.5 }}>{log.notes}</p>}
+                      </div>
                     </div>
                   ))}
                 </div>
@@ -442,46 +586,44 @@ export function LeadDetail() {
           {activeTab === "outreach" && (
             <div style={{ display: "flex", flexDirection: "column", gap: "20px" }}>
               {/* Response Tracking */}
-              <div className="card" style={{ background: "#fff", borderRadius: "16px", padding: "24px", boxShadow: "0 4px 12px rgba(0,0,0,0.08)" }}>
-                <h3 style={{ fontSize: "16px", fontWeight: 600, color: "#1f2937", margin: "0 0 20px" }}>Response Tracking</h3>
-                <div style={{ display: "grid", gridTemplateColumns: "repeat(3, 1fr)", gap: "16px", marginBottom: "20px" }}>
-                  <div style={{ padding: "16px", background: "#f9fafb", borderRadius: "12px" }}>
-                    <span style={{ display: "block", fontSize: "12px", color: "#9ca3af", marginBottom: "4px" }}>Response Status</span>
+              <div style={{ background: "#fff", borderRadius: "20px", padding: "28px", boxShadow: "0 1px 3px rgba(0,0,0,0.06), 0 4px 16px rgba(0,0,0,0.04)", border: "1px solid #f0f0f0" }}>
+                <h3 style={{ fontSize: "15px", fontWeight: 700, color: "#1f2937", margin: "0 0 20px", letterSpacing: "-0.01em" }}>Response Tracking</h3>
+                <div style={{ display: "grid", gridTemplateColumns: "repeat(3, 1fr)", gap: "14px", marginBottom: "20px" }}>
+                  <div style={{ padding: "18px", background: "#f9fafb", borderRadius: "14px" }}>
+                    <span style={{ display: "block", fontSize: "11px", fontWeight: 600, color: "#9ca3af", marginBottom: "6px", textTransform: "uppercase", letterSpacing: "0.05em" }}>Response Status</span>
                     <select
                       value={lead.response_status || "no_response"}
                       onChange={async (e) => {
-                        const updated = await leadsApi.updateLead(lead.id, { 
-                          response_status: e.target.value as ResponseStatus 
-                        });
+                        const updated = await leadsApi.updateLead(lead.id, { response_status: e.target.value as ResponseStatus });
                         setLead(updated);
                       }}
-                      style={{ width: "100%", padding: "8px", borderRadius: "6px", border: "1px solid #e5e7eb", fontSize: "13px" }}
+                      style={{ width: "100%", padding: "8px 10px", borderRadius: "8px", border: "1px solid #e5e7eb", fontSize: "13px" }}
                     >
                       {RESPONSE_STATUS_OPTIONS.map((status) => (
                         <option key={status} value={status}>{RESPONSE_STATUS_LABELS[status]}</option>
                       ))}
                     </select>
                   </div>
-                  <div style={{ padding: "16px", background: "#f9fafb", borderRadius: "12px" }}>
-                    <span style={{ display: "block", fontSize: "12px", color: "#9ca3af", marginBottom: "4px" }}>Follow-ups Sent</span>
-                    <span style={{ fontSize: "24px", fontWeight: 600, color: "#1f2937" }}>{lead.follow_up_count || 0}</span>
+                  <div style={{ padding: "18px", background: "#f9fafb", borderRadius: "14px" }}>
+                    <span style={{ display: "block", fontSize: "11px", fontWeight: 600, color: "#9ca3af", marginBottom: "6px", textTransform: "uppercase", letterSpacing: "0.05em" }}>Follow-ups Sent</span>
+                    <span style={{ fontSize: "28px", fontWeight: 700, color: "#1f2937" }}>{lead.follow_up_count || 0}</span>
                   </div>
-                  <div style={{ padding: "16px", background: "#f9fafb", borderRadius: "12px" }}>
-                    <span style={{ display: "block", fontSize: "12px", color: "#9ca3af", marginBottom: "4px" }}>Next Follow-up</span>
-                    <span style={{ fontSize: "14px", fontWeight: 500, color: lead.next_follow_up_date ? "#1f2937" : "#9ca3af" }}>
+                  <div style={{ padding: "18px", background: "#f9fafb", borderRadius: "14px" }}>
+                    <span style={{ display: "block", fontSize: "11px", fontWeight: 600, color: "#9ca3af", marginBottom: "6px", textTransform: "uppercase", letterSpacing: "0.05em" }}>Next Follow-up</span>
+                    <span style={{ fontSize: "14px", fontWeight: 600, color: lead.next_follow_up_date ? "#1f2937" : "#d1d5db" }}>
                       {lead.next_follow_up_date ? new Date(lead.next_follow_up_date).toLocaleDateString() : "Not scheduled"}
                     </span>
                   </div>
                 </div>
                 {lead.response_summary && (
-                  <div style={{ padding: "16px", background: "#fef3c7", borderRadius: "12px", marginBottom: "16px" }}>
-                    <span style={{ display: "block", fontSize: "12px", color: "#92400e", marginBottom: "4px" }}>Response Summary</span>
-                    <p style={{ fontSize: "14px", color: "#78350f", margin: 0 }}>{lead.response_summary}</p>
+                  <div style={{ padding: "16px", background: "#fffbeb", borderRadius: "14px", marginBottom: "16px", border: "1px solid #fde68a" }}>
+                    <span style={{ display: "block", fontSize: "11px", fontWeight: 600, color: "#92400e", marginBottom: "6px", textTransform: "uppercase", letterSpacing: "0.05em" }}>Response Summary</span>
+                    <p style={{ fontSize: "14px", color: "#78350f", margin: 0, lineHeight: 1.5 }}>{lead.response_summary}</p>
                   </div>
                 )}
                 {(lead.objections?.length || 0) > 0 && (
-                  <div style={{ padding: "16px", background: "#fee2e2", borderRadius: "12px" }}>
-                    <span style={{ display: "block", fontSize: "12px", color: "#991b1b", marginBottom: "8px" }}>Objections Raised</span>
+                  <div style={{ padding: "16px", background: "#fef2f2", borderRadius: "14px", border: "1px solid #fecaca" }}>
+                    <span style={{ display: "block", fontSize: "11px", fontWeight: 600, color: "#991b1b", marginBottom: "8px", textTransform: "uppercase", letterSpacing: "0.05em" }}>Objections Raised</span>
                     <ul style={{ margin: 0, paddingLeft: "20px" }}>
                       {lead.objections?.map((obj, idx) => (
                         <li key={idx} style={{ fontSize: "13px", color: "#b91c1c", marginBottom: "4px" }}>{obj}</li>
@@ -492,51 +634,50 @@ export function LeadDetail() {
               </div>
 
               {/* Outreach Timeline */}
-              <div className="card" style={{ background: "#fff", borderRadius: "16px", padding: "24px", boxShadow: "0 4px 12px rgba(0,0,0,0.08)" }}>
-                <h3 style={{ fontSize: "16px", fontWeight: 600, color: "#1f2937", margin: "0 0 20px" }}>Outreach Journey</h3>
-                <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "16px", marginBottom: "20px" }}>
-                  <div style={{ padding: "16px", background: "#f9fafb", borderRadius: "12px" }}>
-                    <span style={{ display: "block", fontSize: "12px", color: "#9ca3af", marginBottom: "4px" }}>First Outreach</span>
-                    <span style={{ fontSize: "14px", color: "#1f2937" }}>
+              <div style={{ background: "#fff", borderRadius: "20px", padding: "28px", boxShadow: "0 1px 3px rgba(0,0,0,0.06), 0 4px 16px rgba(0,0,0,0.04)", border: "1px solid #f0f0f0" }}>
+                <h3 style={{ fontSize: "15px", fontWeight: 700, color: "#1f2937", margin: "0 0 20px", letterSpacing: "-0.01em" }}>Outreach Journey</h3>
+                <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "14px", marginBottom: "20px" }}>
+                  <div style={{ padding: "18px", background: "#f9fafb", borderRadius: "14px" }}>
+                    <span style={{ display: "block", fontSize: "11px", fontWeight: 600, color: "#9ca3af", marginBottom: "6px", textTransform: "uppercase", letterSpacing: "0.05em" }}>First Outreach</span>
+                    <span style={{ fontSize: "14px", color: "#1f2937", fontWeight: 500 }}>
                       {lead.first_outreach_date ? formatDate(lead.first_outreach_date) : "Not contacted yet"}
                     </span>
                   </div>
-                  <div style={{ padding: "16px", background: "#f9fafb", borderRadius: "12px" }}>
-                    <span style={{ display: "block", fontSize: "12px", color: "#9ca3af", marginBottom: "4px" }}>Method</span>
-                    <span style={{ fontSize: "14px", color: "#1f2937", textTransform: "capitalize" }}>
+                  <div style={{ padding: "18px", background: "#f9fafb", borderRadius: "14px" }}>
+                    <span style={{ display: "block", fontSize: "11px", fontWeight: 600, color: "#9ca3af", marginBottom: "6px", textTransform: "uppercase", letterSpacing: "0.05em" }}>Method</span>
+                    <span style={{ fontSize: "14px", color: "#1f2937", fontWeight: 500, textTransform: "capitalize" }}>
                       {lead.first_outreach_method || "N/A"}
                     </span>
                   </div>
                 </div>
-                {/* Email Timeline from Microsoft Integration */}
                 <EmailTimelineView leadId={lead.id} />
               </div>
 
               {/* Deal Information */}
-              <div className="card" style={{ background: "#fff", borderRadius: "16px", padding: "24px", boxShadow: "0 4px 12px rgba(0,0,0,0.08)" }}>
-                <h3 style={{ fontSize: "16px", fontWeight: 600, color: "#1f2937", margin: "0 0 20px" }}>Deal Information</h3>
-                <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "16px" }}>
-                  <div style={{ padding: "16px", background: "#f9fafb", borderRadius: "12px" }}>
-                    <span style={{ display: "block", fontSize: "12px", color: "#9ca3af", marginBottom: "4px" }}>Deal Value</span>
-                    <span style={{ fontSize: "24px", fontWeight: 600, color: lead.deal_value ? "#10b981" : "#9ca3af" }}>
+              <div style={{ background: "#fff", borderRadius: "20px", padding: "28px", boxShadow: "0 1px 3px rgba(0,0,0,0.06), 0 4px 16px rgba(0,0,0,0.04)", border: "1px solid #f0f0f0" }}>
+                <h3 style={{ fontSize: "15px", fontWeight: 700, color: "#1f2937", margin: "0 0 20px", letterSpacing: "-0.01em" }}>Deal Information</h3>
+                <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "14px" }}>
+                  <div style={{ padding: "18px", background: "#f9fafb", borderRadius: "14px" }}>
+                    <span style={{ display: "block", fontSize: "11px", fontWeight: 600, color: "#9ca3af", marginBottom: "6px", textTransform: "uppercase", letterSpacing: "0.05em" }}>Deal Value</span>
+                    <span style={{ fontSize: "28px", fontWeight: 700, color: lead.deal_value ? "#10b981" : "#d1d5db" }}>
                       {lead.deal_value ? `$${lead.deal_value.toLocaleString()}` : "Not set"}
                     </span>
                   </div>
-                  <div style={{ padding: "16px", background: "#f9fafb", borderRadius: "12px" }}>
-                    <span style={{ display: "block", fontSize: "12px", color: "#9ca3af", marginBottom: "4px" }}>Expected Close</span>
-                    <span style={{ fontSize: "14px", fontWeight: 500, color: lead.expected_close_date ? "#1f2937" : "#9ca3af" }}>
+                  <div style={{ padding: "18px", background: "#f9fafb", borderRadius: "14px" }}>
+                    <span style={{ display: "block", fontSize: "11px", fontWeight: 600, color: "#9ca3af", marginBottom: "6px", textTransform: "uppercase", letterSpacing: "0.05em" }}>Expected Close</span>
+                    <span style={{ fontSize: "14px", fontWeight: 600, color: lead.expected_close_date ? "#1f2937" : "#d1d5db" }}>
                       {lead.expected_close_date ? new Date(lead.expected_close_date).toLocaleDateString() : "Not set"}
                     </span>
                   </div>
-                  <div style={{ padding: "16px", background: "#f9fafb", borderRadius: "12px" }}>
-                    <span style={{ display: "block", fontSize: "12px", color: "#9ca3af", marginBottom: "4px" }}>Service Category</span>
-                    <span style={{ fontSize: "14px", fontWeight: 500, color: "#1f2937" }}>
+                  <div style={{ padding: "18px", background: "#f9fafb", borderRadius: "14px" }}>
+                    <span style={{ display: "block", fontSize: "11px", fontWeight: 600, color: "#9ca3af", marginBottom: "6px", textTransform: "uppercase", letterSpacing: "0.05em" }}>Service Category</span>
+                    <span style={{ fontSize: "14px", fontWeight: 600, color: "#1f2937" }}>
                       {lead.service_category || "Not specified"}
                     </span>
                   </div>
-                  <div style={{ padding: "16px", background: "#f9fafb", borderRadius: "12px" }}>
-                    <span style={{ display: "block", fontSize: "12px", color: "#9ca3af", marginBottom: "4px" }}>Decision Timeline</span>
-                    <span style={{ fontSize: "14px", fontWeight: 500, color: "#1f2937" }}>
+                  <div style={{ padding: "18px", background: "#f9fafb", borderRadius: "14px" }}>
+                    <span style={{ display: "block", fontSize: "11px", fontWeight: 600, color: "#9ca3af", marginBottom: "6px", textTransform: "uppercase", letterSpacing: "0.05em" }}>Decision Timeline</span>
+                    <span style={{ fontSize: "14px", fontWeight: 600, color: "#1f2937" }}>
                       {lead.decision_timeline || "Unknown"}
                     </span>
                   </div>
@@ -546,37 +687,52 @@ export function LeadDetail() {
           )}
 
           {activeTab === "emails" && (
-            <div className="card" style={{ background: "#fff", borderRadius: "16px", padding: "24px", boxShadow: "0 4px 12px rgba(0,0,0,0.08)" }}>
-              <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "20px" }}>
-                <h3 style={{ fontSize: "16px", fontWeight: 600, color: "#1f2937", margin: 0 }}>Email History</h3>
+            <div style={{
+              background: "#fff",
+              borderRadius: "20px",
+              padding: "28px",
+              boxShadow: "0 1px 3px rgba(0,0,0,0.06), 0 4px 16px rgba(0,0,0,0.04)",
+              border: "1px solid #f0f0f0",
+            }}>
+              <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "24px" }}>
+                <h3 style={{ fontSize: "15px", fontWeight: 700, color: "#1f2937", margin: 0, letterSpacing: "-0.01em" }}>Email History</h3>
                 <button
                   onClick={() => setShowComposer(true)}
-                  style={{ padding: "8px 16px", borderRadius: "8px", border: "none", background: "#667eea", color: "#fff", fontSize: "13px", cursor: "pointer" }}
+                  style={{ padding: "7px 18px", borderRadius: "10px", border: "none", background: "#667eea", color: "#fff", fontSize: "13px", fontWeight: 600, cursor: "pointer" }}
                 >
                   + Compose
                 </button>
               </div>
               {emails.length === 0 ? (
-                <div style={{ textAlign: "center", padding: "48px", color: "#9ca3af" }}>
-                  <p style={{ margin: "0 0 16px" }}>No emails sent yet.</p>
+                <div style={{ textAlign: "center", padding: "56px 24px", color: "#9ca3af" }}>
+                  <div style={{ fontSize: "40px", marginBottom: "12px", opacity: 0.4 }}>📧</div>
+                  <p style={{ margin: "0 0 20px", fontSize: "14px" }}>No emails sent yet.</p>
                   <button
                     onClick={() => setShowComposer(true)}
-                    style={{ padding: "10px 20px", borderRadius: "8px", border: "none", background: "#667eea", color: "#fff", fontSize: "14px", cursor: "pointer" }}
+                    style={{ padding: "10px 24px", borderRadius: "10px", border: "none", background: "linear-gradient(135deg, #667eea 0%, #764ba2 100%)", color: "#fff", fontSize: "14px", fontWeight: 600, cursor: "pointer" }}
                   >
                     Send First Email
                   </button>
                 </div>
               ) : (
-                <div style={{ display: "flex", flexDirection: "column", gap: "12px" }}>
+                <div style={{ display: "flex", flexDirection: "column", gap: "8px" }}>
                   {emails.map((email) => (
-                    <div key={email.id} style={{ padding: "16px", background: "#f9fafb", borderRadius: "12px" }}>
+                    <div key={email.id} style={{
+                      padding: "16px 18px",
+                      borderRadius: "14px",
+                      border: "1px solid #f3f4f6",
+                      transition: "all 0.15s ease",
+                    }}
+                      onMouseEnter={(e) => { e.currentTarget.style.background = "#f9fafb"; e.currentTarget.style.borderColor = "#e5e7eb"; }}
+                      onMouseLeave={(e) => { e.currentTarget.style.background = "transparent"; e.currentTarget.style.borderColor = "#f3f4f6"; }}
+                    >
                       <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "8px" }}>
-                        <span style={{ fontSize: "14px", fontWeight: 500, color: "#1f2937" }}>{email.subject}</span>
+                        <span style={{ fontSize: "14px", fontWeight: 600, color: "#1f2937" }}>{email.subject}</span>
                         <span style={{
-                          padding: "4px 8px",
-                          borderRadius: "6px",
+                          padding: "3px 10px",
+                          borderRadius: "20px",
                           fontSize: "11px",
-                          fontWeight: 500,
+                          fontWeight: 600,
                           background: email.status === "sent" ? "#d1fae5" : email.status === "draft" ? "#f3f4f6" : "#fef3c7",
                           color: email.status === "sent" ? "#059669" : email.status === "draft" ? "#6b7280" : "#d97706",
                         }}>{email.status}</span>
@@ -595,54 +751,80 @@ export function LeadDetail() {
           )}
         </div>
 
-        {/* Sidebar - Quick Actions */}
-        <div>
-          <div style={{ background: "#fff", borderRadius: "16px", padding: "20px", boxShadow: "0 4px 12px rgba(0,0,0,0.08)", marginBottom: "16px" }}>
-            <h3 style={{ fontSize: "14px", fontWeight: 600, color: "#1f2937", margin: "0 0 16px" }}>Quick Actions</h3>
-            <div style={{ display: "flex", flexDirection: "column", gap: "8px" }}>
-              <button
-                onClick={() => openQuickLog("Call", "Attempted")}
-                style={{ padding: "12px", borderRadius: "8px", border: "none", background: "#f0fdf4", color: "#15803d", fontSize: "13px", fontWeight: 500, cursor: "pointer", textAlign: "left" }}
-              >
-                📞 Log Call
-              </button>
-              <button
-                onClick={() => setShowComposer(true)}
-                style={{ padding: "12px", borderRadius: "8px", border: "none", background: "#eef2ff", color: "#4338ca", fontSize: "13px", fontWeight: 500, cursor: "pointer", textAlign: "left" }}
-              >
-                📧 Send Email
-              </button>
-              <button
-                onClick={() => openQuickLog("Meeting", "Scheduled")}
-                style={{ padding: "12px", borderRadius: "8px", border: "none", background: "#fef3c7", color: "#b45309", fontSize: "13px", fontWeight: 500, cursor: "pointer", textAlign: "left" }}
-              >
-                📅 Log Meeting
-              </button>
-              <button
-                onClick={() => openQuickLog("Note", "Added")}
-                style={{ padding: "12px", borderRadius: "8px", border: "none", background: "#f3f4f6", color: "#374151", fontSize: "13px", fontWeight: 500, cursor: "pointer", textAlign: "left" }}
-              >
-                📝 Add Note
-              </button>
+        {/* Sidebar */}
+        <div style={{ display: "flex", flexDirection: "column", gap: "16px" }}>
+          {/* Quick Actions */}
+          <div style={{
+            background: "#fff",
+            borderRadius: "20px",
+            padding: "22px",
+            boxShadow: "0 1px 3px rgba(0,0,0,0.06), 0 4px 16px rgba(0,0,0,0.04)",
+            border: "1px solid #f0f0f0",
+          }}>
+            <h3 style={{ fontSize: "12px", fontWeight: 700, color: "#9ca3af", margin: "0 0 14px", textTransform: "uppercase", letterSpacing: "0.06em" }}>Quick Actions</h3>
+            <div style={{ display: "flex", flexDirection: "column", gap: "6px" }}>
+              {[
+                { label: "Log Call", icon: "📞", bg: "#f0fdf4", hoverBg: "#dcfce7", color: "#15803d", action: () => openQuickLog("Call", "Attempted") },
+                { label: "Send Email", icon: "📧", bg: "#eef2ff", hoverBg: "#e0e7ff", color: "#4338ca", action: () => setShowComposer(true) },
+                { label: "Log Meeting", icon: "📅", bg: "#fffbeb", hoverBg: "#fef3c7", color: "#b45309", action: () => openQuickLog("Meeting", "Scheduled") },
+                { label: "Add Note", icon: "📝", bg: "#f9fafb", hoverBg: "#f3f4f6", color: "#374151", action: () => openQuickLog("Note", "Added") },
+              ].map((item) => (
+                <button
+                  key={item.label}
+                  onClick={item.action}
+                  style={{
+                    padding: "11px 14px",
+                    borderRadius: "12px",
+                    border: "none",
+                    background: item.bg,
+                    color: item.color,
+                    fontSize: "13px",
+                    fontWeight: 600,
+                    cursor: "pointer",
+                    textAlign: "left",
+                    display: "flex",
+                    alignItems: "center",
+                    gap: "10px",
+                    transition: "background 0.15s ease",
+                  }}
+                  onMouseEnter={(e) => e.currentTarget.style.background = item.hoverBg}
+                  onMouseLeave={(e) => e.currentTarget.style.background = item.bg}
+                >
+                  <span style={{ fontSize: "15px" }}>{item.icon}</span> {item.label}
+                </button>
+              ))}
             </div>
           </div>
 
           {/* Lead Stats */}
-          <div style={{ background: "#fff", borderRadius: "16px", padding: "20px", boxShadow: "0 4px 12px rgba(0,0,0,0.08)" }}>
-            <h3 style={{ fontSize: "14px", fontWeight: 600, color: "#1f2937", margin: "0 0 16px" }}>Lead Stats</h3>
-            <div style={{ display: "flex", flexDirection: "column", gap: "12px" }}>
-              <div style={{ display: "flex", justifyContent: "space-between" }}>
-                <span style={{ fontSize: "13px", color: "#6b7280" }}>Total Activities</span>
-                <span style={{ fontSize: "13px", fontWeight: 600, color: "#1f2937" }}>{lead.activity_count}</span>
-              </div>
-              <div style={{ display: "flex", justifyContent: "space-between" }}>
-                <span style={{ fontSize: "13px", color: "#6b7280" }}>Emails Sent</span>
-                <span style={{ fontSize: "13px", fontWeight: 600, color: "#1f2937" }}>{emails.filter(e => e.status === "sent").length}</span>
-              </div>
-              <div style={{ display: "flex", justifyContent: "space-between" }}>
-                <span style={{ fontSize: "13px", color: "#6b7280" }}>Calls Made</span>
-                <span style={{ fontSize: "13px", fontWeight: 600, color: "#1f2937" }}>{logs.filter(l => l.activity_type === "Call").length}</span>
-              </div>
+          <div style={{
+            background: "#fff",
+            borderRadius: "20px",
+            padding: "22px",
+            boxShadow: "0 1px 3px rgba(0,0,0,0.06), 0 4px 16px rgba(0,0,0,0.04)",
+            border: "1px solid #f0f0f0",
+          }}>
+            <h3 style={{ fontSize: "12px", fontWeight: 700, color: "#9ca3af", margin: "0 0 16px", textTransform: "uppercase", letterSpacing: "0.06em" }}>Lead Stats</h3>
+            <div style={{ display: "flex", flexDirection: "column", gap: "14px" }}>
+              {[
+                { label: "Total Activities", value: lead.activity_count, color: "#667eea" },
+                { label: "Emails Sent", value: emails.filter(e => e.status === "sent").length, color: "#8b5cf6" },
+                { label: "Calls Made", value: logs.filter(l => l.activity_type === "Call").length, color: "#10b981" },
+              ].map((stat) => (
+                <div key={stat.label} style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+                  <span style={{ fontSize: "13px", color: "#6b7280" }}>{stat.label}</span>
+                  <span style={{
+                    fontSize: "14px",
+                    fontWeight: 700,
+                    color: stat.color,
+                    background: `${stat.color}12`,
+                    padding: "3px 12px",
+                    borderRadius: "8px",
+                    minWidth: "28px",
+                    textAlign: "center",
+                  }}>{stat.value}</span>
+                </div>
+              ))}
             </div>
           </div>
         </div>
