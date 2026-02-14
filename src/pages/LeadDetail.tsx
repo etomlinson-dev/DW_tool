@@ -111,9 +111,14 @@ export function LeadDetail() {
     if (!lead || !quickLogModal) return;
     setQuickLogSaving(true);
     try {
+      const headers: Record<string, string> = { "Content-Type": "application/json" };
+      try {
+        const saved = localStorage.getItem("dw_user");
+        if (saved) { const u = JSON.parse(saved); if (u?.id) headers["X-User-Id"] = String(u.id); }
+      } catch { /* ignore */ }
       const response = await fetch(`/api/leads/${lead.id}/quick-log`, {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
+        headers,
         body: JSON.stringify({
           activity_type: quickLogModal.type,
           outcome: quickLogModal.outcome,
@@ -882,9 +887,14 @@ export function LeadDetail() {
               // Auto-log the email send
               if (lead) {
                 try {
+                  const logHeaders: Record<string, string> = { "Content-Type": "application/json" };
+                  try {
+                    const saved = localStorage.getItem("dw_user");
+                    if (saved) { const u = JSON.parse(saved); if (u?.id) logHeaders["X-User-Id"] = String(u.id); }
+                  } catch { /* ignore */ }
                   const response = await fetch(`/api/leads/${lead.id}/quick-log`, {
                     method: "POST",
-                    headers: { "Content-Type": "application/json" },
+                    headers: logHeaders,
                     body: JSON.stringify({ activity_type: "Email", outcome: "Sent", notes: "" }),
                   });
                   if (response.ok) {

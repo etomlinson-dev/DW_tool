@@ -267,6 +267,7 @@ class Log(Base):
     outcome = Column(String)
     timestamp = Column(DateTime, default=datetime.utcnow)
     notes = Column(String)
+    performed_by = Column(String)  # Name of user who performed the activity
     call_duration = Column(Integer)
     call_outcome = Column(String)
     call_notes = Column(String)
@@ -284,6 +285,7 @@ class Log(Base):
             "outcome": self.outcome,
             "timestamp": self.timestamp.isoformat() if self.timestamp else None,
             "notes": self.notes,
+            "performed_by": self.performed_by,
             "call_duration": self.call_duration,
             "call_outcome": self.call_outcome,
             "call_notes": self.call_notes,
@@ -1334,12 +1336,22 @@ def quick_log_activity(lead_id):
             return jsonify({"error": "Lead not found"}), 404
         
         data = request.json
+        
+        # Determine who is performing the activity
+        performer = None
+        current_user_id = get_current_user_id()
+        if current_user_id:
+            user = session.query(TeamMember).filter_by(id=current_user_id).first()
+            if user:
+                performer = user.name
+        
         log = Log(
             lead_id=lead_id,
             activity_type=data.get("activity_type", "Call"),
             outcome=data.get("outcome", "Attempted"),
             notes=data.get("notes", ""),
             timestamp=datetime.utcnow(),
+            performed_by=performer,
         )
         session.add(log)
         
@@ -1535,24 +1547,37 @@ def get_leaderboard():
             rep_leads = session.query(Lead).filter(Lead.assigned_rep == rep).all()
             rep_lead_ids = [lead.id for lead in rep_leads]
             
-            # Count activities from Log table - on assigned leads
-            log_activities = session.query(Log).filter(
-                Log.lead_id.in_(rep_lead_ids),
-                Log.timestamp >= start_date
-            ).count() if rep_lead_ids else 0
-            
-            # Also count orphan logs (NULL lead_id) - these are direct actions
-            orphan_activities = session.query(Log).filter(
-                Log.lead_id.is_(None),
+            # Count activities PERFORMED BY this rep (preferred, tracks who did it)
+            activities_by_performer = session.query(Log).filter(
+                Log.performed_by == rep,
                 Log.timestamp >= start_date
             ).count()
             
-            # Count calls from Log table
-            calls = session.query(Log).filter(
+            # Fallback: also count activities on assigned leads with no performer recorded
+            # (for historical logs before performed_by was added)
+            activities_on_leads = session.query(Log).filter(
                 Log.lead_id.in_(rep_lead_ids),
-                Log.activity_type == "Call",
+                Log.performed_by.is_(None),
                 Log.timestamp >= start_date
             ).count() if rep_lead_ids else 0
+            
+            log_activities = activities_by_performer + activities_on_leads
+            
+            # Count calls BY this rep
+            calls_by_performer = session.query(Log).filter(
+                Log.performed_by == rep,
+                Log.activity_type == "Call",
+                Log.timestamp >= start_date
+            ).count()
+            
+            calls_on_leads = session.query(Log).filter(
+                Log.lead_id.in_(rep_lead_ids),
+                Log.activity_type == "Call",
+                Log.performed_by.is_(None),
+                Log.timestamp >= start_date
+            ).count() if rep_lead_ids else 0
+            
+            calls = calls_by_performer + calls_on_leads
             
             # Count emails sent through the queue BY this rep
             emails_from_queue = session.query(GeneratedEmail).filter(
@@ -1561,14 +1586,21 @@ def get_leaderboard():
                 GeneratedEmail.sent_at >= start_date
             ).count()
             
-            # Count email logs on assigned leads
-            email_logs = session.query(Log).filter(
+            # Count email logs performed by this rep
+            email_logs_by_performer = session.query(Log).filter(
+                Log.performed_by == rep,
+                Log.activity_type == "Email",
+                Log.timestamp >= start_date
+            ).count()
+            
+            email_logs_on_leads = session.query(Log).filter(
                 Log.lead_id.in_(rep_lead_ids),
                 Log.activity_type == "Email",
+                Log.performed_by.is_(None),
                 Log.timestamp >= start_date
             ).count() if rep_lead_ids else 0
             
-            total_emails = max(emails_from_queue, email_logs)
+            total_emails = max(emails_from_queue, email_logs_by_performer + email_logs_on_leads)
             
             # Count conversions
             conversions = session.query(Lead).filter(
@@ -1577,7 +1609,7 @@ def get_leaderboard():
                 Lead.last_activity >= start_date
             ).count()
             
-            total_activities = log_activities + orphan_activities + emails_from_queue
+            total_activities = log_activities + emails_from_queue
             
             leaderboard.append({
                 "rep": rep,
