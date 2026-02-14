@@ -11,6 +11,7 @@ interface ImportRow {
   phone: string;
   website: string;
   industry: string;
+  location: string;
   source: string;
   service_category: string;
   assigned_rep: string;
@@ -224,6 +225,7 @@ export function BulkImport() {
         phone: rowData.phone || "",
         website: rowData.website || "",
         industry: rowData.industry || "",
+        location: rowData.location || "",
         source: rowData.source || "",
         service_category: rowData.service_category || "",
         assigned_rep: rowData.assigned_rep || "",
@@ -260,6 +262,7 @@ export function BulkImport() {
           phone: row.phone || null,
           website: row.website || null,
           industry: row.industry || null,
+          location: row.location || null,
           source: row.source || null,
           service_category: row.service_category as Lead["service_category"] || null,
           assigned_rep: row.assigned_rep || null,
