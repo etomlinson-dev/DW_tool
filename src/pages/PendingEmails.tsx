@@ -76,9 +76,7 @@ const mapApiToEmail = (e: APIPendingEmail & Record<string, unknown>): PendingEma
 };
 
 const STATUS_TABS = [
-  { id: "pending_review", label: "Pending Review", icon: "⏳" },
-  { id: "approved", label: "Approved", icon: "✅" },
-  { id: "rejected", label: "Rejected", icon: "❌" },
+  { id: "draft", label: "Drafts", icon: "📝" },
   { id: "sent", label: "Sent", icon: "📤" },
   { id: "tracking", label: "Tracking", icon: "📊" },
 ];
@@ -88,7 +86,7 @@ export function PendingEmails() {
   const [emails, setEmails] = useState<PendingEmail[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const [activeTab, setActiveTab] = useState("pending_review");
+  const [activeTab, setActiveTab] = useState("draft");
   const [selectedEmail, setSelectedEmail] = useState<PendingEmail | null>(null);
   const [searchQuery, setSearchQuery] = useState("");
   const [editMode, setEditMode] = useState(false);
@@ -96,7 +94,7 @@ export function PendingEmails() {
   const [showComposer, setShowComposer] = useState(false);
 
   // Tab counts (fetched independently so they always show)
-  const [tabCounts, setTabCounts] = useState<Record<string, number>>({ pending_review: 0, approved: 0, rejected: 0, sent: 0 });
+  const [tabCounts, setTabCounts] = useState<Record<string, number>>({ draft: 0, sent: 0 });
 
   // Tracking state
   const [trackedEmails, setTrackedEmails] = useState<PendingEmail[]>([]);
@@ -737,7 +735,7 @@ export function PendingEmails() {
                 )}
 
                 <div style={styles.previewActions}>
-                  {selectedEmail.status === "pending_review" && (
+                  {selectedEmail.status === "draft" && (
                     <>
                       {editMode ? (
                         <>
@@ -754,45 +752,18 @@ export function PendingEmails() {
                             ✏️ Edit
                           </button>
                           <button
-                            onClick={() => handleReject(selectedEmail.id, "")}
-                            style={styles.rejectBtn}
+                            onClick={() => handleSend(selectedEmail.id)}
+                            style={{ ...styles.sendBtn, opacity: sendingEmail ? 0.7 : 1 }}
+                            disabled={sendingEmail}
                           >
-                            ❌ Reject
-                          </button>
-                          <button
-                            onClick={() => handleApprove(selectedEmail.id)}
-                            style={styles.approveBtn}
-                          >
-                            ✅ Approve
+                            {sendingEmail ? "⏳ Sending..." : "📤 Send Now"}
                           </button>
                         </>
                       )}
                     </>
                   )}
-                  {selectedEmail.status === "approved" && (
-                    <button
-                      onClick={() => handleSend(selectedEmail.id)}
-                      style={{ ...styles.sendBtn, opacity: sendingEmail ? 0.7 : 1 }}
-                      disabled={sendingEmail}
-                    >
-                      {sendingEmail ? "⏳ Sending..." : "📤 Send Now"}
-                    </button>
-                  )}
-                  {selectedEmail.status === "rejected" && (
-                    <button
-                      onClick={() => {
-                        setEmails(emails.map((e) =>
-                          e.id === selectedEmail.id ? { ...e, status: "pending_review" as const } : e
-                        ));
-                        setSelectedEmail({ ...selectedEmail, status: "pending_review" });
-                      }}
-                      style={styles.resubmitBtn}
-                    >
-                      🔄 Resubmit for Review
-                    </button>
-                  )}
                   {selectedEmail.status === "sent" && (
-                    <span style={styles.sentBadge}>✅ Email Sent Successfully</span>
+                    <span style={styles.sentBadge}>Sent Successfully</span>
                   )}
                 </div>
               </>
@@ -838,8 +809,8 @@ export function PendingEmails() {
                 onClose={() => setShowComposer(false)}
                 onSent={() => {
                   setShowComposer(false);
-                  // Refresh emails and switch to pending tab
-                  setActiveTab("pending_review");
+                  // Refresh emails and switch to drafts tab
+                  setActiveTab("draft");
                   fetchEmails();
                   fetchCounts();
                 }}

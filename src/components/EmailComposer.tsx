@@ -18,7 +18,8 @@ export function EmailComposer({ lead: initialLead, onClose, onSent }: EmailCompo
   const [body, setBody] = useState("");
   const [sending, setSending] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [success, setSuccess] = useState(false);
+  const [sentSuccess, setSentSuccess] = useState(false);
+  const [draftSuccess, setDraftSuccess] = useState(false);
   const [loadingTemplates, setLoadingTemplates] = useState(true);
 
   // Lead selection state (when no lead is provided)
@@ -112,7 +113,7 @@ export function EmailComposer({ lead: initialLead, onClose, onSent }: EmailCompo
     }
   };
 
-  // Submit email for review (goes to pending_review queue)
+  // Send email directly via Microsoft Graph
   const handleSend = async () => {
     if (!to) {
       setError("Please enter a recipient email");
@@ -135,7 +136,46 @@ export function EmailComposer({ lead: initialLead, onClose, onSent }: EmailCompo
       if (user?.id) {
         headers["X-User-Id"] = String(user.id);
       }
-      const response = await fetch("/api/emails/queue", {
+      const response = await fetch("/api/send-email", {
+        method: "POST",
+        headers,
+        body: JSON.stringify({
+          to,
+          subject,
+          body,
+          lead_id: lead?.id,
+        }),
+      });
+
+      if (!response.ok) {
+        const data = await response.json();
+        throw new Error(data.error || "Failed to send email");
+      }
+
+      setSentSuccess(true);
+      setTimeout(() => {
+        onSent?.();
+        onClose?.();
+      }, 1500);
+    } catch (err: unknown) {
+      console.error("Failed to send email:", err);
+      setError(err instanceof Error ? err.message : "Failed to send email. Please try again.");
+    } finally {
+      setSending(false);
+    }
+  };
+
+  // Save as draft
+  const handleSaveDraft = async () => {
+    setSending(true);
+    setError(null);
+
+    try {
+      const headers: Record<string, string> = { "Content-Type": "application/json" };
+      if (user?.id) {
+        headers["X-User-Id"] = String(user.id);
+      }
+      const response = await fetch("/api/emails/draft", {
         method: "POST",
         headers,
         body: JSON.stringify({
@@ -150,55 +190,35 @@ export function EmailComposer({ lead: initialLead, onClose, onSent }: EmailCompo
 
       if (!response.ok) {
         const data = await response.json();
-        throw new Error(data.error || "Failed to submit email");
+        throw new Error(data.error || "Failed to save draft");
       }
 
-      setSuccess(true);
-      setTimeout(() => {
-        onSent?.();
-        onClose?.();
-      }, 1500);
+      setDraftSuccess(true);
+      setTimeout(() => onClose?.(), 1500);
     } catch (err: unknown) {
-      console.error("Failed to submit email for review:", err);
-      setError(err instanceof Error ? err.message : "Failed to submit email. Please try again.");
-    } finally {
-      setSending(false);
-    }
-  };
-
-  // Save as draft
-  const handleSaveDraft = async () => {
-    setSending(true);
-    setError(null);
-
-    try {
-      await fetch("/api/emails/draft", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          to,
-          subject,
-          body,
-          lead_id: lead?.id,
-          template_id: selectedTemplateId,
-        }),
-      });
-      setSuccess(true);
-      setTimeout(() => onClose?.(), 1000);
-    } catch (err) {
       console.error("Failed to save draft:", err);
-      setError("Failed to save draft.");
+      setError(err instanceof Error ? err.message : "Failed to save draft.");
     } finally {
       setSending(false);
     }
   };
 
-  if (success) {
+  if (sentSuccess) {
     return (
       <div style={styles.successContainer}>
         <div style={styles.successIcon}>✓</div>
-        <h3 style={styles.successTitle}>Email Submitted for Review!</h3>
-        <p style={styles.successText}>Your email to {to} is now pending approval in the Emails tab</p>
+        <h3 style={styles.successTitle}>Email Sent!</h3>
+        <p style={styles.successText}>Your email to {to} has been sent successfully</p>
+      </div>
+    );
+  }
+
+  if (draftSuccess) {
+    return (
+      <div style={styles.successContainer}>
+        <div style={{ ...styles.successIcon, background: "#6b7280" }}>✓</div>
+        <h3 style={styles.successTitle}>Draft Saved</h3>
+        <p style={styles.successText}>Your email draft has been saved. You can find it in Emails &gt; Drafts.</p>
       </div>
     );
   }
@@ -351,7 +371,7 @@ export function EmailComposer({ lead: initialLead, onClose, onSent }: EmailCompo
             </button>
           )}
           <button onClick={handleSend} style={styles.sendBtn} disabled={sending}>
-            {sending ? "Submitting..." : "Submit for Review"}
+            {sending ? "Sending..." : "Send"}
           </button>
         </div>
       </div>

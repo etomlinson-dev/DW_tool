@@ -2962,6 +2962,54 @@ def queue_email_for_review():
         session.close()
 
 
+@app.route("/api/emails/draft", methods=["POST"])
+def save_email_draft():
+    """Save an email as a draft."""
+    session = get_session()
+    try:
+        data = request.json
+        to_email = data.get("to", "")
+        subject = data.get("subject", "")
+        body = data.get("body", "")
+        lead_id = data.get("lead_id")
+        template_id = data.get("template_id")
+
+        # If lead_id not provided, try to find lead by email
+        if not lead_id and to_email:
+            lead = session.query(Lead).filter_by(email=to_email).first()
+            if lead:
+                lead_id = lead.id
+
+        # Determine composer name
+        composer_name = data.get("generated_by", "Manual")
+        current_user_id = get_current_user_id()
+        if composer_name == "Manual" and current_user_id:
+            member = session.query(TeamMember).get(current_user_id)
+            if member:
+                composer_name = member.name
+
+        email = GeneratedEmail(
+            lead_id=lead_id,
+            template_id=template_id,
+            recipient_email=to_email,
+            subject=subject,
+            body=body,
+            status="draft",
+            priority=data.get("priority", "medium"),
+            generated_by=composer_name,
+            generated_at=datetime.utcnow(),
+        )
+        session.add(email)
+        session.commit()
+
+        return jsonify(email.to_dict()), 201
+    except Exception as e:
+        session.rollback()
+        return jsonify({"error": str(e)}), 500
+    finally:
+        session.close()
+
+
 @app.route("/api/emails/pending", methods=["GET"])
 def get_pending_emails():
     """Get pending emails for review."""
@@ -2984,14 +3032,10 @@ def get_email_counts():
     """Get email counts by status."""
     session = get_session()
     try:
-        pending = session.query(GeneratedEmail).filter(GeneratedEmail.status == "pending_review").count()
-        approved = session.query(GeneratedEmail).filter(GeneratedEmail.status == "approved").count()
-        rejected = session.query(GeneratedEmail).filter(GeneratedEmail.status == "rejected").count()
+        draft = session.query(GeneratedEmail).filter(GeneratedEmail.status == "draft").count()
         sent = session.query(GeneratedEmail).filter(GeneratedEmail.status == "sent").count()
         return jsonify({
-            "pending_review": pending,
-            "approved": approved,
-            "rejected": rejected,
+            "draft": draft,
             "sent": sent,
         })
     finally:
@@ -3046,7 +3090,7 @@ def send_email(email_id):
         if not email:
             return jsonify({"error": "Email not found"}), 404
         
-        if email.status not in ("approved", "pending_review"):
+        if email.status not in ("approved", "pending_review", "draft"):
             return jsonify({"error": f"Email cannot be sent - status is '{email.status}'"}), 400
         
         # Get recipient email - check stored recipient_email first, then fall back to lead email
