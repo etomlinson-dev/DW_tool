@@ -25,7 +25,7 @@ interface IntegrationSettings {
 }
 
 interface AppSettings {
-  defaultView: "dashboard" | "workflow" | "calendar";
+  defaultView: "dashboard" | "calendar";
   leadsPerPage: number;
   autoSaveInterval: number;
   timezone: string;
@@ -45,27 +45,44 @@ export function Settings() {
     avatar: authUser?.name?.split(" ").map(n => n[0]).join("").toUpperCase() || "",
   });
 
-  const [notifications, setNotifications] = useState<NotificationSettings>({
-    emailNotifications: true,
-    pushNotifications: true,
-    dailyDigest: true,
-    weeklyReport: true,
-    leadAssignment: true,
-    proposalUpdates: true,
-    investorActivity: false,
+  const [notifications, setNotifications] = useState<NotificationSettings>(() => {
+    try {
+      const saved = localStorage.getItem("dw_notification_settings");
+      if (saved) return JSON.parse(saved);
+    } catch { /* use defaults */ }
+    return {
+      emailNotifications: true,
+      pushNotifications: true,
+      dailyDigest: true,
+      weeklyReport: true,
+      leadAssignment: true,
+      proposalUpdates: true,
+      investorActivity: false,
+    };
   });
 
   const [integrations, setIntegrations] = useState<IntegrationSettings>({
     microsoftConnected: false,
   });
 
-  const [appSettings, setAppSettings] = useState<AppSettings>({
-    defaultView: "dashboard",
-    leadsPerPage: 50,
-    autoSaveInterval: 5,
-    timezone: "America/New_York",
-    dateFormat: "MM/DD/YYYY",
-    currency: "USD",
+  const [appSettings, setAppSettings] = useState<AppSettings>(() => {
+    try {
+      const saved = localStorage.getItem("dw_app_settings");
+      if (saved) {
+        const parsed = JSON.parse(saved);
+        // Migrate away from removed "workflow" default view option
+        if (parsed.defaultView === "workflow") parsed.defaultView = "dashboard";
+        return parsed;
+      }
+    } catch { /* use defaults */ }
+    return {
+      defaultView: "dashboard",
+      leadsPerPage: 50,
+      autoSaveInterval: 5,
+      timezone: "America/New_York",
+      dateFormat: "MM/DD/YYYY",
+      currency: "USD",
+    };
   });
 
   const [teamMembers, setTeamMembers] = useState<{ id: number; name: string; email: string; role: string; status: string }[]>([]);
@@ -137,10 +154,14 @@ export function Settings() {
 
   const handleSave = () => {
     setSaveStatus("saving");
-    setTimeout(() => {
-      setSaveStatus("saved");
-      setTimeout(() => setSaveStatus("idle"), 2000);
-    }, 1000);
+    try {
+      localStorage.setItem("dw_app_settings", JSON.stringify(appSettings));
+      localStorage.setItem("dw_notification_settings", JSON.stringify(notifications));
+    } catch (err) {
+      console.error("Failed to save settings:", err);
+    }
+    setSaveStatus("saved");
+    setTimeout(() => setSaveStatus("idle"), 2000);
   };
 
   const handleInviteMember = async () => {
@@ -616,7 +637,6 @@ export function Settings() {
                     style={styles.select}
                   >
                     <option value="dashboard">Dashboard</option>
-                    <option value="workflow">Workflow</option>
                     <option value="calendar">Calendar</option>
                   </select>
                 </div>

@@ -76,8 +76,22 @@ export function Dashboard() {
   const [bulkStatus, setBulkStatus] = useState("");
   const [bulkRep, setBulkRep] = useState("");
 
-  // View toggle
-  const [showStats, setShowStats] = useState(true);
+  // View toggle — persisted in localStorage
+  const [showStats, setShowStats] = useState<boolean>(() => {
+    try {
+      const saved = localStorage.getItem("dw_show_stats");
+      if (saved !== null) return saved === "true";
+    } catch { /* use default */ }
+    return true;
+  });
+
+  const toggleStats = () => {
+    setShowStats((prev) => {
+      const next = !prev;
+      try { localStorage.setItem("dw_show_stats", String(next)); } catch { /* ignore */ }
+      return next;
+    });
+  };
 
   // Load dashboard data on mount
   useEffect(() => {
@@ -249,7 +263,7 @@ export function Dashboard() {
           Outreach Dashboard
         </h1>
         <motion.button
-          onClick={() => setShowStats(!showStats)}
+          onClick={toggleStats}
           style={{
             padding: "8px 16px",
             fontSize: "14px",

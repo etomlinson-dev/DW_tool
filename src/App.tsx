@@ -66,6 +66,22 @@ function NavLink({ to, children }: { to: string; children: React.ReactNode }) {
   );
 }
 
+function DefaultViewRedirect() {
+  try {
+    const saved = localStorage.getItem("dw_app_settings");
+    if (saved) {
+      const settings = JSON.parse(saved);
+      const viewRoutes: Record<string, string> = {
+        calendar: "/calendar",
+      };
+      if (settings.defaultView && viewRoutes[settings.defaultView]) {
+        return <Navigate to={viewRoutes[settings.defaultView]} replace />;
+      }
+    }
+  } catch { /* fall through to dashboard */ }
+  return <Dashboard />;
+}
+
 function AppContent() {
   const [showComposer, setShowComposer] = useState(false);
 
@@ -146,7 +162,7 @@ function AppContent() {
       {/* Main Content */}
       <main className="container">
 <Routes>
-            <Route path="/" element={<Dashboard />} />
+            <Route path="/" element={<DefaultViewRedirect />} />
             <Route path="/new" element={<NewLead />} />
             <Route path="/lead/:id" element={<LeadDetail />} />
             <Route path="/templates" element={<EmailTemplates />} />
