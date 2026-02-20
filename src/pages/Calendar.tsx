@@ -93,6 +93,9 @@ export function Calendar() {
   const [loading, setLoading] = useState(true);
   const [leads, setLeads] = useState<LeadOption[]>([]);
 
+  // Hover state for day cells
+  const [hoveredDay, setHoveredDay] = useState<number | null>(null);
+
   // Modal state
   const [modalMode, setModalMode] = useState<"create" | "edit" | null>(null);
   const [editingEvent, setEditingEvent] = useState<CalendarEvent | null>(null);
@@ -140,9 +143,6 @@ export function Calendar() {
     const today = new Date();
     return day === today.getDate() && month === today.getMonth() && year === today.getFullYear();
   };
-
-  const isSelected = (day: number) =>
-    day === selectedDate.getDate() && month === selectedDate.getMonth() && year === selectedDate.getFullYear();
 
   const getEventsForDay = (day: number) =>
     events.filter((e) => {
@@ -288,7 +288,7 @@ export function Calendar() {
               {calendarDays.map((day, index) => {
                 const dayEvents = day ? getEventsForDay(day) : [];
                 const today = day ? isToday(day) : false;
-                const selected = day ? isSelected(day) : false;
+                const hovered = day !== null && hoveredDay === day;
                 return (
                   <div
                     key={index}
@@ -298,18 +298,20 @@ export function Calendar() {
                       setSelectedDate(clicked);
                       openCreate(clicked);
                     }}
+                    onMouseEnter={() => day && setHoveredDay(day)}
+                    onMouseLeave={() => setHoveredDay(null)}
                     style={{
                       ...styles.dayCell,
                       ...(day === null ? styles.dayCellEmpty : {}),
-                      ...(today && !selected ? styles.dayCellToday : {}),
-                      ...(selected ? styles.dayCellSelected : {}),
+                      ...(today ? styles.dayCellToday : {}),
+                      ...(hovered ? styles.dayCellHover : {}),
                     }}
                   >
                     {day && (
                       <>
                         <span style={{
                           ...styles.dayNumber,
-                          ...(selected ? { color: "#fff" } : today ? { color: "#667eea" } : {}),
+                          ...(today ? { color: "#667eea" } : {}),
                         }}>
                           {day}
                         </span>
@@ -320,7 +322,6 @@ export function Calendar() {
                               <div
                                 key={event.id}
                                 onClick={(e) => {
-                                  setSelectedDate(new Date(year, month, day));
                                   openEdit(event, e);
                                 }}
                                 style={{
@@ -668,11 +669,12 @@ const styles: Record<string, React.CSSProperties> = {
   dayCell: {
     minHeight: "110px",
     padding: "8px",
-    background: "#f9fafb",
+    background: "#f3f4f6",
     borderRadius: "10px",
     cursor: "pointer",
-    transition: "background 0.15s, box-shadow 0.15s",
+    transition: "background 0.15s, box-shadow 0.15s, transform 0.15s, border 0.15s",
     position: "relative" as const,
+    border: "1.5px solid transparent",
   },
   dayCellEmpty: {
     background: "transparent",
@@ -683,9 +685,11 @@ const styles: Record<string, React.CSSProperties> = {
     background: "#eef2ff",
     border: "2px solid #667eea",
   },
-  dayCellSelected: {
-    background: "linear-gradient(135deg, #667eea 0%, #764ba2 100%)",
-    boxShadow: "0 4px 12px rgba(102, 126, 234, 0.35)",
+  dayCellHover: {
+    background: "#dde3ff",
+    boxShadow: "0 4px 12px rgba(102, 126, 234, 0.3)",
+    transform: "translateY(-2px)",
+    border: "1.5px solid #667eea",
   },
   dayNumber: {
     fontSize: "13px",
