@@ -1,6 +1,6 @@
 import { useState, useEffect, useCallback } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { calendarApi, leadsApi, type CalendarEvent as APICalendarEvent } from "../api/client";
+import { calendarApi, leadsApi, remindersApi, type CalendarEvent as APICalendarEvent, type Reminder as APIReminder } from "../api/client";
 
 interface CalendarEvent {
   id: number;
@@ -20,6 +20,43 @@ interface LeadOption {
   id: number;
   name: string;
 }
+
+interface CalendarReminder {
+  id: number;
+  title: string;
+  priority: "High" | "Medium" | "Low";
+  type: string;
+  date: Date;
+  dateStr: string;
+  leadName: string;
+  status: string;
+}
+
+const mapApiToReminder = (r: APIReminder): CalendarReminder => {
+  const date = r.due_date ? new Date(r.due_date) : new Date();
+  const dateStr = date.toISOString().split("T")[0];
+  const priorityMap: Record<string, "High" | "Medium" | "Low"> = { high: "High", medium: "Medium", low: "Low" };
+  let status = "Pending";
+  if (r.completed_at) status = "Completed";
+  else if (r.snoozed_until && new Date(r.snoozed_until) > new Date()) status = "Snoozed";
+  else if (dateStr < new Date().toISOString().split("T")[0] && !r.completed_at) status = "Overdue";
+  return {
+    id: r.id,
+    title: r.title,
+    priority: priorityMap[r.priority?.toLowerCase() || "medium"] || "Medium",
+    type: r.type || "other",
+    date,
+    dateStr,
+    leadName: r.lead_name || "",
+    status,
+  };
+};
+
+const REMINDER_PRIORITY_COLORS: Record<string, { bg: string; color: string }> = {
+  High: { bg: "#fee2e2", color: "#dc2626" },
+  Medium: { bg: "#fef3c7", color: "#d97706" },
+  Low: { bg: "#dcfce7", color: "#16a34a" },
+};
 
 interface EventForm {
   title: string;
@@ -90,6 +127,7 @@ export function Calendar() {
   const [currentDate, setCurrentDate] = useState(new Date());
   const [selectedDate, setSelectedDate] = useState<Date>(new Date());
   const [events, setEvents] = useState<CalendarEvent[]>([]);
+  const [reminders, setReminders] = useState<CalendarReminder[]>([]);
   const [loading, setLoading] = useState(true);
   const [leads, setLeads] = useState<LeadOption[]>([]);
 
@@ -123,11 +161,21 @@ export function Calendar() {
 
   useEffect(() => { fetchEvents(); }, [fetchEvents]);
 
+  const fetchReminders = useCallback(async () => {
+    try {
+      const data = await remindersApi.getReminders();
+      setReminders(data.map(mapApiToReminder));
+    } catch (err) {
+      console.error("Failed to fetch reminders for calendar:", err);
+    }
+  }, []);
+
   useEffect(() => {
+    fetchReminders();
     leadsApi.getLeads({ per_page: 200 }).then((res) => {
       setLeads(res.leads.map((l) => ({ id: l.id, name: l.name })));
     }).catch(() => {});
-  }, []);
+  }, [fetchReminders]);
 
   // Calendar grid calculations
   const firstDayOfMonth = new Date(year, month, 1);
@@ -157,6 +205,16 @@ export function Calendar() {
         d.getMonth() === selectedDate.getMonth() &&
         d.getFullYear() === selectedDate.getFullYear();
     });
+  };
+
+  const getRemindersForDay = (day: number) => {
+    const dateStr = `${year}-${String(month + 1).padStart(2, "0")}-${String(day).padStart(2, "0")}`;
+    return reminders.filter((r) => r.dateStr === dateStr);
+  };
+
+  const getSelectedDayReminders = () => {
+    const dateStr = `${selectedDate.getFullYear()}-${String(selectedDate.getMonth() + 1).padStart(2, "0")}-${String(selectedDate.getDate()).padStart(2, "0")}`;
+    return reminders.filter((r) => r.dateStr === dateStr);
   };
 
   // Open create modal
@@ -222,7 +280,7 @@ export function Calendar() {
       } else if (modalMode === "edit" && editingEvent) {
         await calendarApi.updateEvent(editingEvent.id, payload);
       }
-      await fetchEvents();
+      await Promise.all([fetchEvents(), fetchReminders()]);
       closeModal();
     } catch (err) {
       console.error("Failed to save event:", err);
@@ -238,7 +296,7 @@ export function Calendar() {
     setDeleting(true);
     try {
       await calendarApi.deleteEvent(editingEvent.id);
-      await fetchEvents();
+      await Promise.all([fetchEvents(), fetchReminders()]);
       closeModal();
     } catch (err) {
       console.error("Failed to delete event:", err);
@@ -287,6 +345,7 @@ export function Calendar() {
             <div style={styles.calendarGrid}>
               {calendarDays.map((day, index) => {
                 const dayEvents = day ? getEventsForDay(day) : [];
+                const dayReminders = day ? getRemindersForDay(day) : [];
                 const today = day ? isToday(day) : false;
                 const hovered = day !== null && hoveredDay === day;
                 return (
@@ -316,14 +375,12 @@ export function Calendar() {
                           {day}
                         </span>
                         <div style={styles.dayEvents}>
-                          {dayEvents.slice(0, 3).map((event) => {
+                          {dayEvents.slice(0, 2).map((event) => {
                             const style = EVENT_TYPE_STYLES[event.type];
                             return (
                               <div
-                                key={event.id}
-                                onClick={(e) => {
-                                  openEdit(event, e);
-                                }}
+                                key={`evt-${event.id}`}
+                                onClick={(e) => openEdit(event, e)}
                                 style={{
                                   ...styles.eventPill,
                                   background: style.bg,
@@ -335,8 +392,26 @@ export function Calendar() {
                               </div>
                             );
                           })}
-                          {dayEvents.length > 3 && (
-                            <span style={styles.moreEvents}>+{dayEvents.length - 3} more</span>
+                          {dayReminders.slice(0, 2).map((r) => {
+                            const pc = REMINDER_PRIORITY_COLORS[r.priority];
+                            return (
+                              <div
+                                key={`rem-${r.id}`}
+                                onClick={(e) => e.stopPropagation()}
+                                style={{
+                                  ...styles.reminderPill,
+                                  background: pc.bg,
+                                  color: pc.color,
+                                  opacity: r.status === "Completed" ? 0.5 : 1,
+                                }}
+                                title={`🔔 ${r.title}${r.leadName ? ` — ${r.leadName}` : ""}`}
+                              >
+                                🔔 {r.title.length > 10 ? r.title.substring(0, 10) + "…" : r.title}
+                              </div>
+                            );
+                          })}
+                          {(dayEvents.length + dayReminders.length) > 4 && (
+                            <span style={styles.moreEvents}>+{dayEvents.length + dayReminders.length - 4} more</span>
                           )}
                         </div>
                       </>
@@ -363,40 +438,64 @@ export function Calendar() {
           </div>
 
           <div style={styles.eventList}>
-            {getSelectedDayEvents().length === 0 ? (
+            {getSelectedDayEvents().length === 0 && getSelectedDayReminders().length === 0 ? (
               <div style={styles.noEvents}>
                 <div style={styles.noEventsIcon}>📅</div>
-                <p style={styles.noEventsText}>No events scheduled</p>
+                <p style={styles.noEventsText}>No events or reminders</p>
                 <button style={styles.addEventBtn} onClick={() => openCreate(selectedDate)}>
                   + Add Event
                 </button>
               </div>
             ) : (
-              getSelectedDayEvents()
-                .sort((a, b) => new Date(a.startIso).getTime() - new Date(b.startIso).getTime())
-                .map((event) => {
-                  const style = EVENT_TYPE_STYLES[event.type];
+              <>
+                {getSelectedDayEvents()
+                  .sort((a, b) => new Date(a.startIso).getTime() - new Date(b.startIso).getTime())
+                  .map((event) => {
+                    const style = EVENT_TYPE_STYLES[event.type];
+                    return (
+                      <div
+                        key={`evt-${event.id}`}
+                        style={styles.eventCard}
+                        onClick={(e) => openEdit(event, e)}
+                      >
+                        <div style={{ ...styles.eventAccent, background: style.bg }} />
+                        <div style={styles.eventCardBody}>
+                          <div style={styles.eventCardHeader}>
+                            <span style={{ ...styles.eventTypeBadge, background: style.bg + "22", color: style.bg }}>
+                              {EVENT_TYPE_ICONS[event.type]} {event.type}
+                            </span>
+                            <span style={styles.eventTime}>{event.time}</span>
+                          </div>
+                          <h4 style={styles.eventTitle}>{event.title}</h4>
+                          {event.leadName && <p style={styles.eventLead}>👤 {event.leadName}</p>}
+                          {event.notes && <p style={styles.eventNotes}>{event.notes}</p>}
+                        </div>
+                      </div>
+                    );
+                  })}
+                {getSelectedDayReminders().map((r) => {
+                  const pc = REMINDER_PRIORITY_COLORS[r.priority];
                   return (
-                    <div
-                      key={event.id}
-                      style={styles.eventCard}
-                      onClick={(e) => openEdit(event, e)}
-                    >
-                      <div style={{ ...styles.eventAccent, background: style.bg }} />
+                    <div key={`rem-${r.id}`} style={styles.eventCard}>
+                      <div style={{ ...styles.eventAccent, background: pc.color }} />
                       <div style={styles.eventCardBody}>
                         <div style={styles.eventCardHeader}>
-                          <span style={{ ...styles.eventTypeBadge, background: style.bg + "22", color: style.bg }}>
-                            {EVENT_TYPE_ICONS[event.type]} {event.type}
+                          <span style={{ ...styles.eventTypeBadge, background: pc.bg, color: pc.color }}>
+                            🔔 Reminder
                           </span>
-                          <span style={styles.eventTime}>{event.time}</span>
+                          <span style={{ ...styles.eventTime, color: pc.color, fontWeight: 600 }}>{r.priority}</span>
                         </div>
-                        <h4 style={styles.eventTitle}>{event.title}</h4>
-                        {event.leadName && <p style={styles.eventLead}>👤 {event.leadName}</p>}
-                        {event.notes && <p style={styles.eventNotes}>{event.notes}</p>}
+                        <h4 style={{ ...styles.eventTitle, opacity: r.status === "Completed" ? 0.5 : 1, textDecoration: r.status === "Completed" ? "line-through" : "none" }}>
+                          {r.title}
+                        </h4>
+                        {r.leadName && <p style={styles.eventLead}>👤 {r.leadName}</p>}
+                        {r.status === "Completed" && <p style={{ ...styles.eventNotes, color: "#16a34a" }}>✓ Completed</p>}
+                        {r.status === "Overdue" && <p style={{ ...styles.eventNotes, color: "#dc2626" }}>⚠ Overdue</p>}
                       </div>
                     </div>
                   );
-                })
+                })}
+              </>
             )}
           </div>
 
@@ -712,6 +811,17 @@ const styles: Record<string, React.CSSProperties> = {
     whiteSpace: "nowrap" as const,
     cursor: "pointer",
     fontWeight: 500,
+  },
+  reminderPill: {
+    fontSize: "10px",
+    padding: "2px 5px",
+    borderRadius: "4px",
+    overflow: "hidden",
+    textOverflow: "ellipsis",
+    whiteSpace: "nowrap" as const,
+    cursor: "default",
+    fontWeight: 500,
+    border: "1px dashed currentColor",
   },
   moreEvents: {
     fontSize: "10px",

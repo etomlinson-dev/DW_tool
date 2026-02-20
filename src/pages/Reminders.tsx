@@ -85,7 +85,7 @@ export function Reminders() {
   const [priorityFilter, setPriorityFilter] = useState("All");
   const [typeFilter, setTypeFilter] = useState("All");
   const [statusFilter, setStatusFilter] = useState("All");
-  const [viewMode, setViewMode] = useState<"list" | "calendar">("list");
+  const [viewMode, setViewMode] = useState<"list" | "calendar">("calendar");
 
   // Calendar state
   const [currentMonth, setCurrentMonth] = useState(new Date());
