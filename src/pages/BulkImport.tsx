@@ -66,32 +66,51 @@ export function BulkImport() {
   ];
 
   const parseCSV = (text: string): { headers: string[]; data: string[][] } => {
-    const lines = text.split("\n").filter((line) => line.trim());
-    if (lines.length === 0) return { headers: [], data: [] };
+    // Full RFC 4180 parser: handles embedded newlines, escaped quotes (""), and \r\n
+    const rows: string[][] = [];
+    let col = "";
+    let row: string[] = [];
+    let inQuotes = false;
+    // Normalise \r\n and lone \r to \n so we only deal with one newline style
+    const src = text.replace(/\r\n/g, "\n").replace(/\r/g, "\n");
 
-    const parseRow = (row: string): string[] => {
-      const result: string[] = [];
-      let current = "";
-      let inQuotes = false;
-
-      for (let i = 0; i < row.length; i++) {
-        const char = row[i];
-        if (char === '"') {
-          inQuotes = !inQuotes;
-        } else if (char === "," && !inQuotes) {
-          result.push(current.trim());
-          current = "";
+    for (let i = 0; i < src.length; i++) {
+      const ch = src[i];
+      if (inQuotes) {
+        if (ch === '"') {
+          // "" inside a quoted field is an escaped quote
+          if (src[i + 1] === '"') {
+            col += '"';
+            i++;
+          } else {
+            inQuotes = false;
+          }
         } else {
-          current += char;
+          col += ch;
+        }
+      } else {
+        if (ch === '"') {
+          inQuotes = true;
+        } else if (ch === ",") {
+          row.push(col.trim());
+          col = "";
+        } else if (ch === "\n") {
+          row.push(col.trim());
+          col = "";
+          if (row.some((c) => c !== "")) rows.push(row);
+          row = [];
+        } else {
+          col += ch;
         }
       }
-      result.push(current.trim());
-      return result;
-    };
+    }
+    // Flush last field/row
+    row.push(col.trim());
+    if (row.some((c) => c !== "")) rows.push(row);
 
-    const headers = parseRow(lines[0]);
-    const data = lines.slice(1).map(parseRow);
-
+    if (rows.length === 0) return { headers: [], data: [] };
+    const headers = rows[0];
+    const data = rows.slice(1);
     return { headers, data };
   };
 
@@ -296,7 +315,10 @@ export function BulkImport() {
         successCount++;
       } catch (error) {
         failedCount++;
-        errors.push(`Row ${row.id}: Failed to import "${row.business_name}"`);
+        const apiMessage =
+          (error as { response?: { data?: { error?: string } } })?.response?.data?.error;
+        const reason = apiMessage || (error instanceof Error ? error.message : "Unknown error");
+        errors.push(`Row ${row.id}: Failed to import "${row.business_name}" — ${reason}`);
       }
 
       setImportProgress(((i + 1) / validRows.length) * 100);
