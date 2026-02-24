@@ -202,6 +202,24 @@ export function BulkImport() {
         errors.push("Invalid email format");
       }
 
+      // Normalize common status aliases before validation
+      const statusAliasMap: Record<string, string> = {
+        contacted: "Connected",
+        Contacted: "Connected",
+        "not contacted": "Not Contacted",
+        attempted: "Attempted",
+        connected: "Connected",
+        "follow up needed": "Follow-up Needed",
+        "follow-up needed": "Follow-up Needed",
+        "qualified lead": "Qualified Lead",
+        "proposal sent": "Proposal Sent",
+        "not interested": "Not Interested",
+        converted: "Converted",
+      };
+      const rawStatus = rowData.status || "";
+      const normalizedStatus =
+        statusAliasMap[rawStatus] || statusAliasMap[rawStatus.toLowerCase()] || rawStatus;
+
       // Validate status
       const validStatuses = [
         "Not Contacted",
@@ -213,9 +231,9 @@ export function BulkImport() {
         "Not Interested",
         "Converted",
       ];
-      const status = (rowData.status || "Not Contacted") as LeadStatus;
-      if (rowData.status && !validStatuses.includes(rowData.status)) {
-        errors.push(`Invalid status: ${rowData.status}`);
+      const status = (normalizedStatus || "Not Contacted") as LeadStatus;
+      if (normalizedStatus && !validStatuses.includes(normalizedStatus)) {
+        errors.push(`Invalid status: ${rawStatus}`);
       }
 
       return {
@@ -231,7 +249,7 @@ export function BulkImport() {
         source: rowData.source || "",
         service_category: rowData.service_category || "",
         assigned_rep: rowData.assigned_rep || "",
-        status: validStatuses.includes(status) ? status : "Not Contacted",
+        status: validStatuses.includes(normalizedStatus) ? (normalizedStatus as LeadStatus) : "Not Contacted",
         tags: rowData.tags || "",
         deal_value: rowData.deal_value || "",
         notes: rowData.notes || "",
