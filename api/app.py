@@ -1286,6 +1286,39 @@ def delete_lead(lead_id):
         session.close()
 
 
+@app.route("/api/leads/bulk-delete", methods=["POST"])
+def bulk_delete_leads():
+    """Bulk delete leads. Pass lead_ids=[] to delete ALL leads."""
+    session = get_session()
+    try:
+        data = request.json
+        ids = data.get("lead_ids", [])
+        q = session.query(Lead)
+        if ids:
+            q = q.filter(Lead.id.in_(ids))
+        count = q.delete(synchronize_session=False)
+        session.commit()
+        return jsonify({"success": True, "deleted": count})
+    finally:
+        session.close()
+
+
+@app.route("/api/leads/check-duplicate", methods=["POST"])
+def check_duplicate_lead():
+    """Check if a lead with the given business name already exists."""
+    session = get_session()
+    try:
+        name = (request.json.get("business_name") or "").strip().lower()
+        if not name:
+            return jsonify({"duplicate": False})
+        exists = session.query(Lead.id).filter(
+            func.lower(Lead.business_name) == name
+        ).first()
+        return jsonify({"duplicate": bool(exists)})
+    finally:
+        session.close()
+
+
 @app.route("/api/leads/bulk-update", methods=["POST"])
 def bulk_update_leads():
     """Bulk update leads."""

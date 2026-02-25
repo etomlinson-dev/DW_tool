@@ -255,6 +255,24 @@ export const leadsApi = {
   ): Promise<void> => {
     await api.post("/leads/bulk-update", { lead_ids: leadIds, ...updates });
   },
+
+  // Bulk delete leads (empty array = delete all)
+  bulkDelete: async (leadIds: number[]): Promise<{ deleted: number }> => {
+    const response = await api.post<{ success: boolean; deleted: number }>(
+      "/leads/bulk-delete",
+      { lead_ids: leadIds }
+    );
+    return response.data;
+  },
+
+  // Check if a lead with this business name already exists
+  checkDuplicate: async (businessName: string): Promise<{ duplicate: boolean }> => {
+    const response = await api.post<{ duplicate: boolean }>(
+      "/leads/check-duplicate",
+      { business_name: businessName }
+    );
+    return response.data;
+  },
 };
 
 // Logs API
