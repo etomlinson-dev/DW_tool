@@ -41,8 +41,9 @@ export function BulkImport() {
   const [importResults, setImportResults] = useState<{
     success: number;
     failed: number;
+    duplicates: number;
     errors: string[];
-  }>({ success: 0, failed: 0, errors: [] });
+  }>({ success: 0, failed: 0, duplicates: 0, errors: [] });
   const [isDragging, setIsDragging] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
@@ -288,11 +289,20 @@ export function BulkImport() {
     const validRows = previewData.filter((row) => row.isValid);
     let successCount = 0;
     let failedCount = 0;
+    let duplicateCount = 0;
     const errors: string[] = [];
 
     for (let i = 0; i < validRows.length; i++) {
       const row = validRows[i];
       try {
+        const dupeCheck = await leadsApi.checkDuplicate(row.business_name);
+        if (dupeCheck.duplicate) {
+          duplicateCount++;
+          errors.push(`Row ${row.id}: Skipped — "${row.business_name}" already exists`);
+          setImportProgress(((i + 1) / validRows.length) * 100);
+          continue;
+        }
+
         const leadData: Partial<Lead> = {
           business_name: row.business_name,
           contact_name: row.contact_name || null,
@@ -327,6 +337,7 @@ export function BulkImport() {
     setImportResults({
       success: successCount,
       failed: failedCount,
+      duplicates: duplicateCount,
       errors,
     });
     setStep("complete");
@@ -340,7 +351,7 @@ export function BulkImport() {
     setMappings([]);
     setPreviewData([]);
     setImportProgress(0);
-    setImportResults({ success: 0, failed: 0, errors: [] });
+    setImportResults({ success: 0, failed: 0, duplicates: 0, errors: [] });
   };
 
   const downloadTemplate = () => {
@@ -651,15 +662,19 @@ export function BulkImport() {
             <div
               style={{
                 ...styles.completeIcon,
-                background: importResults.failed === 0 ? "#dcfce7" : "#fef3c7",
+                background: importResults.failed === 0 && importResults.duplicates === 0
+                  ? "#dcfce7"
+                  : "#fef3c7",
               }}
             >
-              {importResults.failed === 0 ? "✓" : "⚠️"}
+              {importResults.failed === 0 && importResults.duplicates === 0 ? "✓" : "⚠️"}
             </div>
             <h2 style={styles.completeTitle}>Import Complete!</h2>
             <p style={styles.completeText}>
               Successfully imported {importResults.success} lead
               {importResults.success !== 1 ? "s" : ""}
+              {importResults.duplicates > 0 &&
+                `, ${importResults.duplicates} skipped (duplicate)`}
               {importResults.failed > 0 &&
                 `, ${importResults.failed} failed`}
             </p>
@@ -671,6 +686,14 @@ export function BulkImport() {
                 </span>
                 <span style={styles.completeStatLabel}>Imported</span>
               </div>
+              {importResults.duplicates > 0 && (
+                <div style={{ ...styles.completeStatBox, background: "#fef9c3", border: "1px solid #fde68a" }}>
+                  <span style={styles.completeStatValue}>
+                    {importResults.duplicates}
+                  </span>
+                  <span style={styles.completeStatLabel}>Duplicates</span>
+                </div>
+              )}
               <div style={{ ...styles.completeStatBox, ...styles.statBoxRed }}>
                 <span style={styles.completeStatValue}>
                   {importResults.failed}

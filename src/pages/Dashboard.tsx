@@ -627,7 +627,7 @@ export function Dashboard() {
                 if (selectedIds.length === 0) return;
                 if (!confirm(`Delete ${selectedIds.length} lead(s)? This cannot be undone.`)) return;
                 try {
-                  await Promise.all(selectedIds.map((id) => leadsApi.deleteLead(id)));
+                  await leadsApi.bulkDelete(selectedIds);
                   setSelectedIds([]);
                   const res = await leadsApi.getLeads({ per_page: 200 });
                   setLeads(res.data);
@@ -648,6 +648,35 @@ export function Dashboard() {
               }}
             >
               Delete Selected
+            </button>
+            <button
+              onClick={async () => {
+                const confirmation = prompt(
+                  `This will permanently delete ALL ${totalLeads} leads. Type DELETE to confirm.`
+                );
+                if (confirmation !== "DELETE") return;
+                try {
+                  const result = await leadsApi.bulkDelete([]);
+                  alert(`Deleted ${result.deleted} leads.`);
+                  setSelectedIds([]);
+                  const res = await leadsApi.getLeads({ per_page: 200 });
+                  setLeads(res.data);
+                } catch (err) {
+                  console.error("Failed to delete all leads:", err);
+                }
+              }}
+              style={{
+                padding: "8px 16px",
+                borderRadius: "8px",
+                border: "1px solid #fecaca",
+                background: "#fef2f2",
+                color: "#dc2626",
+                fontSize: "13px",
+                fontWeight: 500,
+                cursor: "pointer",
+              }}
+            >
+              Delete All Leads
             </button>
           </div>
         </div>
